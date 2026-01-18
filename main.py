@@ -243,7 +243,7 @@ def compile_weapon():
 
         pap_md, pap_links = interpret_weapon_paps(weapon_data)
         
-        return f"##{"#"*depth} {weapon_name}\n{tags}\n{author}\n{cost}\n{description}\n{pap_links}"
+        return f"##{"#"*depth} {weapon_name}\n{tags}  \n{author}  \n{cost}  \n{description}  \n{pap_links}  "
 
 
     def item_block(key,data,depth,markdown):
