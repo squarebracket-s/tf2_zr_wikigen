@@ -30,6 +30,7 @@ jobs:
         git clone https://github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
         mv weapons.md ./tf2_zr_wikigen.wiki/Weapons.md
         mv wavesets.md ./tf2_zr_wikigen.wiki/Wavesets.md
+        rm -r ./tf2_zr_wikigen.wiki/hud_images/
         mv hud_images/ ./tf2_zr_wikigen.wiki/hud_images/
         cd tf2_zr_wikigen.wiki
         git add .
