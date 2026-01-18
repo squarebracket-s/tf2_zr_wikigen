@@ -207,7 +207,7 @@ def compile_waveset_npc():
         wave_cfg = unique_enemy_delays(wave_cfg)
         WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
         waveset_desc_key = WAVESET_LIST["Waves"][waveset_name]["desc"]
-        MARKDOWN_WAVESETS += f"# {waveset_name.replace(" ","-")}\n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","\n")}  \n[Back to Outline](#outline)  \n"
+        MARKDOWN_WAVESETS += f"# {waveset_name.replace(" ","-")}\n[Back to Outline](#outline)  \n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","\n")}  \n"
         for wave in WAVESET_DATA:
             try:
                 int(wave) # Check if key can be converted to a number to detect wave notation
@@ -262,7 +262,8 @@ def compile_waveset_npc():
                     if wave_entry_data["plugin"] not in added_npc_ids:
                         added_npc_ids.append(wave_entry_data["plugin"])
                         npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
-                        MARKDOWN_NPCS += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_data["description"].replace("\\n","  \n")}  \n"
+                        npc_cat = f"Category: {npc_data["category"]}  \n" if npc_data["category"] != "" else ""
+                        MARKDOWN_NPCS += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_cat}{npc_data["description"].replace("\\n","  \n  ")}  \n"
                 else:
                     MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
     
