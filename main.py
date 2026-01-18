@@ -231,7 +231,7 @@ def compile_waveset_npc():
                         image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
                 else:
                     image = f'<img src="./hud_images/missing.png" alt="D" width="16"/>'
-                MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](npcs.md#{wave_entry_data["plugin"]}){extra_info}  \n"
+                MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](NPCs.md#{wave_entry_data["plugin"]}){extra_info}  \n"
                 if wave_entry_data["plugin"] not in added_npc_ids:
                     added_npc_ids.append(wave_entry_data["plugin"])
                     npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
