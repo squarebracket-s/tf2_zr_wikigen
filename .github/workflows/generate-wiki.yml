@@ -20,18 +20,13 @@ jobs:
     - run: ls
     - name: run main script
       run: ./venv/bin/python main.py
-
-    - name: clone repo wiki
-      run: git clone https://github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
     
-    # TODO: main script should do this by itself
-    - name: move markdown into wiki
-      run: |
-        mv weapons.md ./tf2_zr_wikigen.wiki/Weapons.md
-        mv wavesets.md ./tf2_zr_wikigen.wiki/Wavesets.md
-
+    # TODO: main script should move markdown into wiki by itself?
     - name: push to wiki
       run: |
+        git clone https://github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
+        mv weapons.md ./tf2_zr_wikigen.wiki/Weapons.md
+        mv wavesets.md ./tf2_zr_wikigen.wiki/Wavesets.md
         cd tf2_zr_wikigen.wiki
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
