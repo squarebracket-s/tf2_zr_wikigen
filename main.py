@@ -1,6 +1,7 @@
 import os
 from keyvalues1 import KeyValues1
 import vtf2img
+import re
 import json
 
 # Utility functions
@@ -21,16 +22,25 @@ def write(filename, val):
 
 
 ## COMPILE WAVESETS -------------------------------------------------------------------------------------------------
+def remove_multiline_comments(d): # Fixes the script interpreting the comment in npc_headcrabzombie.sp as actual data
+    new_str = ""
+    reading_comment = False
+    for line in d.splitlines():
+        if line == "/*": reading_comment=True
+        if line == "*/": reading_comment=False
+        if not reading_comment:
+            new_str += line
+    return new_str
+
 def compile_waveset_npc():
     print("Compiling Wavesets...")
 
     def extract_npc_data(path):
         file_data = read(path)
         if ("npc_donoteveruse" not in file_data and "NPC_Add" in file_data):
+            file_data = remove_multiline_comments(file_data)
             # Get name
             name = file_data.split("	strcopy(data.Name, sizeof(data.Name), \"")[1].split("\");")[0]
-            if name == "TestName": # Blame Artvin for naming headcrab zombies TESTNAME??
-                name = path.split("/")[-1].split("npc_")[1].split(".sp")[0].capitalize()
             
             # Get plugin and health
             if "shared" in path:
@@ -65,7 +75,6 @@ def compile_waveset_npc():
                 except IndexError:
                     health = "?"
                 plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")[1].split("\");")[0]
-            
             # Get icon
             try:
                 icon = file_data.split("	strcopy(data.Icon, sizeof(data.Icon), \"")[1].split("\");")[0]
@@ -137,10 +146,7 @@ def compile_waveset_npc():
                         pn_data = data[npc_file].copy()
                         pn_data["health"] = pn_data["health"][i]
                         npc_by_file[pn] = pn_data
-                else:
-                    if plugin_name == "npc_test": # npc_headcrabzombie defines its plugin as npc_test for whatever reason.
-                        plugin_name = npc_file.split("/")[-1][:-3]
-                    
+                else:                    
                     npc_by_file[plugin_name] = data[npc_file]
         #write("npc_data.json",json.dumps(npc_by_file,indent=2))
         return npc_by_file
@@ -227,7 +233,7 @@ def compile_waveset_npc():
 
 
 def compile_weapon():
-    print("Compiling weapon list...")
+    print("Compiling Weapon List...")
     MARKDOWN_WEAPON = ""
     CFG_WEAPONS = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
     PHRASES_WEAPON = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt").replace("'\n",'"\n'))["Phrases"]
