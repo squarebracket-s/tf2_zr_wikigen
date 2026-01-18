@@ -239,15 +239,17 @@ def compile_waveset_npc():
                             npc_icon.save(npc_png_icon_path)
                         image = f'<img src="{npc_png_icon_path}" alt="A" width="16"/>'
                     elif os.path.isfile(raw_npc_icon_path):
-                        if not os.path.isfile(npc_png_icon_path):
+                        if not os.path.isfile(npc_png_icon_path): # Local testing has persistent env
                             os.rename(raw_npc_icon_path, npc_png_icon_path)
                         image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
-                    else: # if file doesn't exist already (in case of testing locally, where files aren't reset every time)
-                        image_wiki = fetch_wiki_image(npc_data["icon"]) #TODO
-                        if image_wiki:
-                            pass #TODO
-                        else:
-                            image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
+                    elif os.path.isfile(npc_png_icon_path): # Local testing has persistent env
+                        image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
+                    else:
+                        #image_wiki = fetch_wiki_image(npc_data["icon"]) #TODO
+                        #if image_wiki:
+                        #    pass #TODO
+                        #else:
+                        image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
                 else:
                     image = f'<img src="./hud_images/missing.png" alt="D" width="16"/>'
                 # Testing different ways to link to other files' sections. doesn't seem to work on github wikis all that much
