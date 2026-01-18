@@ -45,6 +45,12 @@ def compile_waveset_npc():
             except IndexError:
                 icon = ""
 
+            # Get health
+            try:
+                health = file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split('"')[5]
+            except IndexError:
+                health = "?"
+            
             desc_key = f"{name} Desc"
             if desc_key in PHRASES_NPC:
                 description = PHRASES_NPC[desc_key]["en"].replace("\\n","\n")
@@ -52,7 +58,7 @@ def compile_waveset_npc():
                 description = PHRASES_NPC_2[desc_key]["en"].replace("\\n","\n")
             else:
                 description = ""
-            return True, {"name": name, "description": description, "plugin": plugin, "icon": icon}
+            return True, {"name": name, "description": description, "plugin": plugin, "icon": icon, "health": health}
         return False, None
 
 
@@ -168,6 +174,8 @@ def compile_waveset_npc():
                 extra_info = ""
                 if "health" in wave_entry_data:
                     extra_info += f" {wave_entry_data["health"]}HP"
+                else:
+                    extra_info += f" {NPCS_BY_FILENAME[wave_entry_data["plugin"]]["health"]}HP"
                 if "force_scaling" in wave_entry_data:
                     if wave_entry_data["force_scaling"]=="1":
                         extra_info += " _(scaled)_"
@@ -186,7 +194,7 @@ def compile_waveset_npc():
                         image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
                 else:
                     image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
-                MARKDOWN_NPC += f"{count} {image} [{npc_name}](npcs.md{wave_entry_data["plugin"]}){extra_info}  \n"
+                MARKDOWN_NPC += f"{count} {image} [{npc_name}](npcs.md#{wave_entry_data["plugin"]}){extra_info}  \n"
     
     # TODO: List of npcs by plugin name
     write("wavesets.md",MARKDOWN_NPC)
