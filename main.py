@@ -325,12 +325,12 @@ def compile_weapon():
             return {"name": pap_name, "description": pap_desc, "cost": pap_cost, "tags": pap_tags, "_skip": pap_skip, "_paths": pap_paths, "_attributes": pap_attributes}
         return None
     
-    def pap_data_to_md(data):
+    def pap_data_to_md(data,depth):
         if data["description"] in PHRASES_WEAPON:
             desc = PHRASES_WEAPON[data["description"]]["en"]
         else:
             desc = data["description"] # some paps don't have translation for whatever reason lmao
-        return f"### {data["name"]} \\[{id_from_str(data["_attributes"])}\\]  \n{data["tags"]}  \n${data["cost"]}  \n{desc.replace("\\n","  \n")}  \n"
+        return f"### {(" "*DEPTH)} {data["name"]} \\[{id_from_str(data["_attributes"])}\\]  \n{data["tags"]}  \n${data["cost"]}  \n{desc.replace("\\n","  \n")}  \n"
 
     def pap_data_to_link(data):
         return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{data["name"].lower().replace(" ","-")}-{id_from_str(data["_attributes"])})  \n"
@@ -353,7 +353,7 @@ def compile_weapon():
                     links += f"{" "*DEPTH} _Path {i+1}_  \n"
                 pd = extract_pap_data(weapon_name,weapon_data,idx)#+int(parent_pap["_skip"]))
                 if pd:
-                    md += (" "*DEPTH) + pap_data_to_md(pd)
+                    md += pap_data_to_md(pd,DEPTH)
                     links += (" "*DEPTH) + pap_data_to_link(pd)
                     if pd["_paths"]!="0": md, links = item_block(pd, idx+int(pd["_skip"]), md, links,DEPTH+1)
             return md, links
