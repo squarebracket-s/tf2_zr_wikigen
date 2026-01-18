@@ -414,4 +414,4 @@ def compile_weapon():
     write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
 
 compile_weapon()
-#compile_waveset_npc()
+compile_waveset_npc()
