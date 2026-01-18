@@ -190,7 +190,7 @@ def compile_waveset_npc():
 
 
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
-    MARKDOWN_WAVESETS = "**Links to NPC details do not scroll to specified section unless opened in a new tab**  \n# Outline\n"
+    MARKDOWN_WAVESETS = "# Outline\n"
     MARKDOWN_NPCS = ""
     added_npc_ids = []
 
@@ -358,7 +358,7 @@ def compile_weapon():
                     if pd["_paths"]!="0": md, links = item_block(pd, idx+int(pd["_skip"]), md, links,DEPTH+1)
             return md, links
         # eugh
-        pap_md += f"# {weapon_name}  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapons#{weapon_name})  \n"
+        pap_md += f"# {weapon_name}  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapons#{weapon_name.lower().replace(" ","-").replace(",","").replace("&","")})  \n"
         if "pappaths" in weapon_data: init_pap_paths = weapon_data["pappaths"]
         else: init_pap_paths = 1
         pap_links = "**Paps**  \n"
