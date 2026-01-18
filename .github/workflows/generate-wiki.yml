@@ -17,7 +17,7 @@ jobs:
     
     - name: clone zr repo
       run: git clone https://github.com/artvin01/TF2-Zombie-Riot
-    
+    - run: ls
     - name: run main script
       run: ./venv/bin/python main.py
 
@@ -33,6 +33,9 @@ jobs:
     - name: push to wiki
       run: |
         cd tf2_zr_wikigen.wiki
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git add .
         git commit -m "Generate Wiki [$GITHUB_SHA]"
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
         git push origin main
