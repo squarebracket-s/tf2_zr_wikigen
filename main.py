@@ -169,30 +169,32 @@ def compile_waveset_npc():
 
 
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
-    MARKDOWN_NPC = "# Outline:\n"
+    MARKDOWN_WAVESETS = "# Outline\n"
+    MARKDOWN_NPCS = ""
+    added_npc_ids = []
 
-    PHRASES_NPC = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.zombienames.txt"))
-    PHRASES_NPC_2 = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.item.gift.desc.txt"))
-    WAVESET_LIST = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/fastmode_redsun.cfg"))["Setup"]
+    PHRASES_NPC = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.zombienames.txt"))["Phrases"]
+    PHRASES_NPC_2 = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.item.gift.desc.txt"))["Phrases"]
     PHRASES_WAVESET = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.txt"))["Phrases"]
+    WAVESET_LIST = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/fastmode_redsun.cfg"))["Setup"]
 
     NPCS_BY_FILENAME = parse_all_npcs()
 
     for waveset_name in WAVESET_LIST["Waves"]:
-        MARKDOWN_NPC += f"- [{waveset_name}](#{waveset_name.lower().replace(" ","-")})\n"
+        MARKDOWN_WAVESETS += f"- [{waveset_name}](#{waveset_name.lower().replace(" ","-")})\n"
     
     for waveset_name in WAVESET_LIST["Waves"]:
         wave_cfg = read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{WAVESET_LIST["Waves"][waveset_name]["file"]}.cfg")
         wave_cfg = unique_enemy_delays(wave_cfg)
         WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
         waveset_desc_key = WAVESET_LIST["Waves"][waveset_name]["desc"]
-        MARKDOWN_NPC += f"# {waveset_name.replace(" ","-")}\n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","\n")}\n"
+        MARKDOWN_WAVESETS += f"# {waveset_name.replace(" ","-")}\n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","\n")}\n"
         for wave in WAVESET_DATA:
             try:
                 int(wave) # Check if key can be converted to a number to detect wave notation
             except ValueError:
                 continue
-            MARKDOWN_NPC += f"## {wave}\n"
+            MARKDOWN_WAVESETS += f"## {wave}\n"
             wave_data = WAVESET_DATA[wave]
             for wave_entry in wave_data:
                 try:
@@ -201,33 +203,43 @@ def compile_waveset_npc():
                     continue
                 wave_entry_data = wave_data[wave_entry]
                 count = "1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
+                npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
                 extra_info = ""
                 if "health" in wave_entry_data:
                     extra_info += f" {wave_entry_data["health"]}HP"
                 else:
-                    extra_info += f" {NPCS_BY_FILENAME[wave_entry_data["plugin"]]["health"]}"
+                    extra_info += f" {npc_data["health"]}"
                 if "force_scaling" in wave_entry_data:
                     if wave_entry_data["force_scaling"]=="1":
                         extra_info += " _(scaled)_"
-                npc_name = NPCS_BY_FILENAME[wave_entry_data["plugin"]]["name"]
-                if NPCS_BY_FILENAME[wave_entry_data["plugin"]]["icon"]!="":
-                    npc_icon_key = "leaderboard_class_"+NPCS_BY_FILENAME[wave_entry_data["plugin"]]["icon"]+".vtf"
+                npc_name = npc_data["name"]
+                if npc_data["icon"]!="":
+                    npc_icon_key = "leaderboard_class_"+npc_data["icon"]+".vtf"
                     npc_icon_path = f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}"
-                    npc_png_icon_path = f"hud_images/{NPCS_BY_FILENAME[wave_entry_data["plugin"]]["icon"]}.png"
+                    npc_png_icon_path = f"hud_images/{npc_data["icon"]}.png"
+                    raw_npc_icon_path = f"./TF2-Zombie-Riot/dev_files_donot_use_for_server/hud_icons/WIP/RawClassIcons/leaderboard_class_{NPCS_BY_FILENAME[wave_entry_data["plugin"]]["icon"]}.png"
                     if os.path.isfile(npc_icon_path):
                         if not os.path.isfile(npc_png_icon_path):
-                            # TODO: Look into ./dev_files_donot_use_for_server/hud_icons/WIP/RawClassIcons/ png files
                             npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
                             npc_icon.save(npc_png_icon_path)
-                        image = f'<img src="{npc_png_icon_path}" alt="C" width="16"/>'
-                    else:
+                        image = f'<img src="{npc_png_icon_path}" alt="A" width="16"/>'
+                    elif os.path.isfile(raw_npc_icon_path):
+                        if not os.path.isfile(npc_png_icon_path):
+                            os.rename(raw_npc_icon_path, npc_png_icon_path)
+                        image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
+                    elif not os.path.isfile(npc_png_icon_path): # if file doesn't exist already (in case of testing locally, where files aren't reset every time)
                         image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
                 else:
-                    image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
-                MARKDOWN_NPC += f"{count} {image} [{npc_name}](npcs.md#{wave_entry_data["plugin"]}){extra_info}  \n"
+                    image = f'<img src="./hud_images/missing.png" alt="D" width="16"/>'
+                MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](npcs.md#{wave_entry_data["plugin"]}){extra_info}  \n"
+                if wave_entry_data["plugin"] not in added_npc_ids:
+                    added_npc_ids.append(wave_entry_data["plugin"])
+                    npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
+                    MARKDOWN_NPCS += f"# {image.replace("16","32")} {npc_name}  \n###### {wave_entry_data["plugin"]}  \n{npc_health}{npc_data["description"]}  \n"
     
     # TODO: List of npcs by plugin name
-    write("wavesets.md",MARKDOWN_NPC)
+    write("wavesets.md", MARKDOWN_WAVESETS)
+    write("npcs.md", MARKDOWN_NPCS)
 
 ## COMPILE WEAPON CFG -------------------------------------------------------------------------------------------------
 
