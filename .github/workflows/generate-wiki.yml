@@ -16,7 +16,7 @@ jobs:
       run: python -m venv venv; ./venv/bin/pip install -r requirements.txt
     
     - name: clone zr repo
-      run: git clone https://github.com/artvin01/TF2-Zombie-Riot .
+      run: git clone https://github.com/artvin01/TF2-Zombie-Riot
     - run: ls
     - name: run main script
       run: ./venv/bin/python main.py
