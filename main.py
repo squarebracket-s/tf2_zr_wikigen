@@ -2,6 +2,7 @@ import os
 from keyvalues1 import KeyValues1
 import vtf2img
 import re
+import hashlib
 
 # Utility functions
 # U+3164 -> 'ㅤ'
@@ -271,11 +272,14 @@ def compile_waveset_npc():
     write("npcs.md", MARKDOWN_NPCS)
 
 ## COMPILE WEAPON CFG -------------------------------------------------------------------------------------------------
-
+def id_from_str(string):
+    # https://stackoverflow.com/questions/49808639/generate-a-variable-length-hash
+    return hashlib.shake_256(string.encode("utf-8")).hexdigest(4)
 
 def compile_weapon():
     print("Compiling Weapon List...")
     MARKDOWN_WEAPON = ""
+    MARKDOWN_WEAPON_PAP = ""
     CFG_WEAPONS = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
     PHRASES_WEAPON = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt").replace("'\n",'"\n'))["Phrases"]
     
@@ -294,12 +298,73 @@ def compile_weapon():
     def is_category(c):
         return "author" not in c and "filter" in c and "whiteout" not in c
 
+    def extract_pap_data(weapon_name, weapon_data, idx):
+        pap_key = f"pap_{idx}_"
+        key_desc = pap_key+"desc"
+        if key_desc in weapon_data:
+            key_customname = pap_key + "custom_name"
+            if key_customname in weapon_data: pap_name = weapon_data[key_customname]
+            else: pap_name = weapon_name
+            
+            pap_desc = weapon_data[key_desc]
 
-    def interpret_weapon_paps(weapon_data):
+            pap_cost = weapon_data[pap_key+"cost"]
+
+            if pap_key+"tags" in weapon_data: pap_tags = " ".join(f"#{tag}" for tag in weapon_data[pap_key+"tags"].split(";") if tag != "")
+            else: pap_tags = ""
+
+            key_papskip = pap_key+"papskip"
+            if key_papskip in weapon_data: pap_skip = weapon_data[key_papskip]
+            else: pap_skip = "0"
+
+            key_pappaths = pap_key+"pappaths"
+            if key_pappaths in weapon_data: pap_paths = weapon_data[key_pappaths]
+            else: pap_paths = "1"
+
+            pap_attributes = weapon_data[pap_key+"attributes"]
+
+            return {"name": pap_name, "description": pap_desc, "cost": pap_cost, "tags": pap_tags, "_skip": pap_skip, "_paths": pap_paths, "_attributes": pap_attributes}
+        return None
+    
+    def pap_data_to_md(parent_weapon,data):
+        if data["description"] in PHRASES_WEAPON:
+            desc = PHRASES_WEAPON[data["description"]]["en"]
+        else:
+            desc = data["description"] # some paps don't have translation for whatever reason lmao
+        return f"### {data["name"]} \\[{id_from_str(data["_attributes"])}\\]  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapons#{parent_weapon})  \n{data["tags"]}  \n${data["cost"]}  \n{desc.replace("\\n","  \n")}  \n"
+
+    def pap_data_to_link(data):
+        return f"<a href=\"https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{"-"+data["name"].lower().replace(" ","-")}-{id_from_str(data["_attributes"])}\">{data["name"]}</a>  \n"
+
+
+    def interpret_weapon_paps(weapon_name,weapon_data):
+        """
+        pap_#_pappaths define how many paps you can choose from below ("2" paths on "PaP 1" allows you to choose between "PaP 2" and "PaP 3")
+        pap_#_papskip Skips a number of paps to choose ("1" skip on "PaP 1" allows you to choose "PaP 3" instead)
+        """
         pap_idx = 0
         pap_md = ""
         pap_links = ""
-        # TODO
+        def item_block(parent_weapon,parent_pap,idx,md,links):
+            print("block start",idx)
+            for _ in range(int(parent_pap["_paths"])):
+                idx += 1
+                if "name" not in parent_pap: # First iter of blocks
+                    md += f"## _Path {idx}_  \n"
+                    links += f"_Path {idx}_  \n"
+                pd = extract_pap_data(weapon_name,weapon_data,idx)#+int(parent_pap["_skip"]))
+                if pd:
+                    md += pap_data_to_md(parent_weapon,pd)
+                    links += pap_data_to_link(pd)
+                    if pd["_paths"]!="0": md, links = item_block(parent_weapon,pd, idx+int(pd["_skip"]), md, links)
+            return md, links
+        # eugh
+        print("#Main weapon:",weapon_name)
+        pap_md += f"# {weapon_name}  \n"
+        if "pappaths" in weapon_data:
+            pap_md, pap_links = item_block(weapon_name,{"_skip": "0", "_paths": weapon_data["pappaths"]}, pap_idx, pap_md, pap_links)
+        print("pap_md:", pap_md)
+        print("---")
         return pap_md, pap_links
 
 
@@ -320,12 +385,12 @@ def compile_weapon():
                 description = k
         else: description = ""
 
-        pap_md, pap_links = interpret_weapon_paps(weapon_data)
+        pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
         
-        return f"##{"#"*depth} {weapon_name}\n{tags}  \n{author}  \n{cost}  \n{description}  \n{pap_links}  "
+        return f"##{"#"*depth} {weapon_name}\n{tags}  \n{author}  \n{cost}  \n{description}  \n{pap_links}  ", pap_md
 
 
-    def item_block(key,data,depth,markdown):
+    def item_block(key,data,depth,markdown,markdown_pap):
         if "hidden" not in data:
             depth += 1
             markdown += f"#{"#"*depth} {key}\n"
@@ -334,19 +399,22 @@ def compile_weapon():
                 if is_trophy(item_data):
                     markdown += f"Trophy: {item}\n"
                 elif is_weapon(item_data):
-                    markdown += parse_weapon_data(item,item_data,depth)
+                    m1, m2 = parse_weapon_data(item,item_data,depth)
+                    markdown += m1
+                    markdown_pap += m2
                 elif item[0].isupper() and is_category(item_data) or "Perks" in item or "Trophies"==item: # unneeded data is always lowercase...
-                    markdown = item_block(item, item_data, depth, markdown)
+                    markdown, markdown_pap = item_block(item, item_data, depth, markdown, markdown_pap)
                 elif "whiteout" in item_data:
                     markdown += f"Info: {item}\n"
-        return markdown
+        return markdown, markdown_pap
 
 
     for item_category in CFG_WEAPONS:
         if is_item_category(CFG_WEAPONS[item_category]):
-            MARKDOWN_WEAPON = item_block(item_category,CFG_WEAPONS[item_category],0,MARKDOWN_WEAPON)
+            MARKDOWN_WEAPON, MARKDOWN_WEAPON_PAP = item_block(item_category,CFG_WEAPONS[item_category],0,MARKDOWN_WEAPON,MARKDOWN_WEAPON_PAP)
 
     write("weapons.md", MARKDOWN_WEAPON)
+    write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
 
 compile_weapon()
-compile_waveset_npc()
+#compile_waveset_npc()

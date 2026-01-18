@@ -31,6 +31,7 @@ jobs:
         mv weapons.md ./tf2_zr_wikigen.wiki/Weapons.md
         mv wavesets.md ./tf2_zr_wikigen.wiki/Wavesets.md
         mv npcs.md ./tf2_zr_wikigen.wiki/NPCs.md
+        mv weapon_paps.md ./tf2_zr_wikigen.wiki/Weapon_Paps.md
         rm -r ./tf2_zr_wikigen.wiki/hud_images/
         mv hud_images/ ./tf2_zr_wikigen.wiki/hud_images/
         cd tf2_zr_wikigen.wiki
