@@ -182,7 +182,7 @@ def compile_waveset_npc():
 
 
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
-    MARKDOWN_WAVESETS = "# Outline\n"
+    MARKDOWN_WAVESETS = "**Links to NPC details do not scroll to specified section unless opened in a new tab**  \n# Outline\n"
     MARKDOWN_NPCS = ""
     added_npc_ids = []
 
@@ -255,12 +255,12 @@ def compile_waveset_npc():
                 #MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-")}){extra_info}  \n" # links to file, not the section though
                 if not npc_data["hidden"]: # NOTE: NPCs that are supposed to be hidden in the encyclopedia still have descriptions in zombieriot.phrases.item.gift.desc.txt
                     MARKDOWN_WAVESETS += f"{count} {image} <a href=\"https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-")}\">{npc_name}</a> {extra_info}  \n"
+                    if wave_entry_data["plugin"] not in added_npc_ids:
+                        added_npc_ids.append(wave_entry_data["plugin"])
+                        npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
+                        MARKDOWN_NPCS += f"# {image.replace("16","32")} {npc_name}  \n###### {wave_entry_data["plugin"]}  \n{npc_health}{npc_data["description"]}  \n"
                 else:
                     MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
-                if wave_entry_data["plugin"] not in added_npc_ids:
-                    added_npc_ids.append(wave_entry_data["plugin"])
-                    npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
-                    MARKDOWN_NPCS += f"# {image.replace("16","32")} {npc_name}  \n###### {wave_entry_data["plugin"]}  \n{npc_health}{npc_data["description"]}  \n"
     
     # TODO: List of npcs by plugin name
     write("wavesets.md", MARKDOWN_WAVESETS)
