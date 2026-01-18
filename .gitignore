@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Local testing
+TF2-Zombie-Riot/
+hud_images/
+.obsidian/
+
+weapons.md
+wavesets.md

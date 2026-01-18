@@ -32,11 +32,38 @@ def compile_waveset_npc():
             if name == "TestName": # Blame Artvin for naming headcrab zombies TESTNAME??
                 name = path.split("/")[-1].split("npc_")[1].split(".sp")[0].capitalize()
             
-            # Get plugin
+            # Get plugin and health
             if "shared" in path:
                 plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")
                 plugin = [item.split("\");")[0] for i,item in enumerate(plugin) if i > 0]
+
+                base_path = path.replace(path.split("/")[-1],"") # remove deepest item
+                health = []
+                for p in plugin:
+                    p_data = read(base_path+p+".sp")
+                    try:
+                        h = p_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
+                        if h == "GetBuildingHealth()" or h == "health":
+                            h = "[dynamic]"
+                        elif "MinibossHealthScaling" in h:
+                            h = f"dynamically scaled (Base {h.split("(")[1][:-1]}HP)"
+                        else:
+                            h = h + "HP"
+                    except IndexError:
+                        h = "?"
+                    health.append(h)
             else:
+                # TODO: Handle cases e.g. carrier?4500:(elite?5000:4000)HP, data[0]?3750:3000HP, elite?7200:5700HP
+                try:
+                    health = file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
+                    if health == "GetBuildingHealth()" or health == "health":
+                        health = "[dynamic] HP"
+                    elif "MinibossHealthScaling" in health:
+                        health = f"dynamically scaled (Base {health.split("(")[1][:-1]}HP)"
+                    else:
+                        health = health + "HP"
+                except IndexError:
+                    health = "?"
                 plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")[1].split("\");")[0]
             
             # Get icon
@@ -45,11 +72,6 @@ def compile_waveset_npc():
             except IndexError:
                 icon = ""
 
-            # Get health
-            try:
-                health = file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
-            except IndexError:
-                health = "?"
             
             desc_key = f"{name} Desc"
             if desc_key in PHRASES_NPC:
@@ -111,14 +133,16 @@ def compile_waveset_npc():
             for npc_file in data:
                 plugin_name = data[npc_file]["plugin"]
                 if type(plugin_name) == type([]):
-                    for pn in plugin_name:
-                        npc_by_file[pn] = data[npc_file]
+                    for i,pn in enumerate(plugin_name):
+                        pn_data = data[npc_file].copy()
+                        pn_data["health"] = pn_data["health"][i]
+                        npc_by_file[pn] = pn_data
                 else:
                     if plugin_name == "npc_test": # npc_headcrabzombie defines its plugin as npc_test for whatever reason.
                         plugin_name = npc_file.split("/")[-1][:-3]
                     
                     npc_by_file[plugin_name] = data[npc_file]
-        write("npc_data.json",json.dumps(npc_by_file,indent=2))
+        #write("npc_data.json",json.dumps(npc_by_file,indent=2))
         return npc_by_file
     
 
@@ -175,7 +199,7 @@ def compile_waveset_npc():
                 if "health" in wave_entry_data:
                     extra_info += f" {wave_entry_data["health"]}HP"
                 else:
-                    extra_info += f" {NPCS_BY_FILENAME[wave_entry_data["plugin"]]["health"]}HP"
+                    extra_info += f" {NPCS_BY_FILENAME[wave_entry_data["plugin"]]["health"]}"
                 if "force_scaling" in wave_entry_data:
                     if wave_entry_data["force_scaling"]=="1":
                         extra_info += " _(scaled)_"
