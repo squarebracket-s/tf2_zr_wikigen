@@ -47,7 +47,7 @@ def compile_waveset_npc():
 
             # Get health
             try:
-                health = file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split('"')[5]
+                health = file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].strip('"').strip(" ")
             except IndexError:
                 health = "?"
             
