@@ -242,7 +242,7 @@ def compile_waveset_npc():
                         if not os.path.isfile(npc_png_icon_path):
                             os.rename(raw_npc_icon_path, npc_png_icon_path)
                         image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
-                    elif not os.path.isfile(npc_png_icon_path): # if file doesn't exist already (in case of testing locally, where files aren't reset every time)
+                    else: # if file doesn't exist already (in case of testing locally, where files aren't reset every time)
                         image_wiki = fetch_wiki_image(npc_data["icon"]) #TODO
                         if image_wiki:
                             pass #TODO
