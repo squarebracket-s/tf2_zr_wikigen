@@ -21,12 +21,10 @@ def write(filename, val):
 
 
 ## COMPILE WAVESETS -------------------------------------------------------------------------------------------------
-LOG = ""
 def compile_waveset_npc():
     print("Compiling Wavesets...")
 
     def extract_npc_data(path):
-        global LOG
         file_data = read(path)
         if ("npc_donoteveruse" not in file_data and "NPC_Add" in file_data):
             # Get name
@@ -38,10 +36,8 @@ def compile_waveset_npc():
             if "shared" in path:
                 plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")
                 plugin = [item.split("\");")[0] for i,item in enumerate(plugin) if i > 0]
-                LOG += "["+", ".join(plugin) + "]\n"
             else:
                 plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")[1].split("\");")[0]
-                LOG += plugin + "\n"
             
             # Get icon
             try:
@@ -49,10 +45,6 @@ def compile_waveset_npc():
             except IndexError:
                 icon = ""
 
-            #try:
-            #    category = file_data.split("	data.Category = ")[1].split(";")[0].split("Type_")[1]
-            #except IndexError:
-            #;    category = ""
             desc_key = f"{name} Desc"
             if desc_key in PHRASES_NPC:
                 description = PHRASES_NPC[desc_key]["en"].replace("\\n","\n")
