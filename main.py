@@ -186,7 +186,7 @@ def compile_waveset_npc():
                         image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
                 else:
                     image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
-                MARKDOWN_NPC += f"{count} {image} [{npc_name}](npcs.md{wave_entry_data["plugin"]}){extra_info}\n"
+                MARKDOWN_NPC += f"{count} {image} [{npc_name}](npcs.md{wave_entry_data["plugin"]}){extra_info}  \n"
     
     # TODO: List of npcs by plugin name
     write("wavesets.md",MARKDOWN_NPC)
