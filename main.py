@@ -256,10 +256,8 @@ def compile_waveset_npc():
                 else:
                     image = f'<img src="./hud_images/missing.png" alt="D" width="16"/>'
                 # Testing different ways to link to other files' sections. doesn't seem to work on github wikis all that much
-                #MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](NPCs.md#{wave_entry_data["plugin"]}){extra_info}  \n" # links to raw file
-                #MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-")}){extra_info}  \n" # links to file, not the section though
                 if npc_data["category"] != "Type_Hidden": # NOTE: NPCs that are supposed to be hidden in the encyclopedia still have descriptions in zombieriot.phrases.item.gift.desc.txt
-                    MARKDOWN_WAVESETS += f"{count} {image} <a href=\"https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}\">{npc_name}</a> {extra_info}  \n"
+                    MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}) {extra_info}  \n"
                     if wave_entry_data["plugin"] not in added_npc_ids:
                         added_npc_ids.append(wave_entry_data["plugin"])
                         npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
@@ -326,15 +324,15 @@ def compile_weapon():
             return {"name": pap_name, "description": pap_desc, "cost": pap_cost, "tags": pap_tags, "_skip": pap_skip, "_paths": pap_paths, "_attributes": pap_attributes}
         return None
     
-    def pap_data_to_md(parent_weapon,data):
+    def pap_data_to_md(data):
         if data["description"] in PHRASES_WEAPON:
             desc = PHRASES_WEAPON[data["description"]]["en"]
         else:
             desc = data["description"] # some paps don't have translation for whatever reason lmao
-        return f"### {data["name"]} \\[{id_from_str(data["_attributes"])}\\]  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapons#{parent_weapon})  \n{data["tags"]}  \n${data["cost"]}  \n{desc.replace("\\n","  \n")}  \n"
+        return f"### {data["name"]} \\[{id_from_str(data["_attributes"])}\\]  \n{data["tags"]}  \n${data["cost"]}  \n{desc.replace("\\n","  \n")}  \n"
 
     def pap_data_to_link(data):
-        return f"<a href=\"https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{"-"+data["name"].lower().replace(" ","-")}-{id_from_str(data["_attributes"])}\">{data["name"]}</a>  \n"
+        return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{data["name"].lower().replace(" ","-")}-{id_from_str(data["_attributes"])})  \n"
 
 
     def interpret_weapon_paps(weapon_name,weapon_data):
@@ -345,8 +343,7 @@ def compile_weapon():
         pap_idx = 0
         pap_md = ""
         pap_links = ""
-        def item_block(parent_weapon,parent_pap,idx,md,links):
-            print("block start",idx)
+        def item_block(parent_pap,idx,md,links):
             for _ in range(int(parent_pap["_paths"])):
                 idx += 1
                 if "name" not in parent_pap: # First iter of blocks
@@ -354,17 +351,15 @@ def compile_weapon():
                     links += f"_Path {idx}_  \n"
                 pd = extract_pap_data(weapon_name,weapon_data,idx)#+int(parent_pap["_skip"]))
                 if pd:
-                    md += pap_data_to_md(parent_weapon,pd)
+                    md += pap_data_to_md(pd)
                     links += pap_data_to_link(pd)
-                    if pd["_paths"]!="0": md, links = item_block(parent_weapon,pd, idx+int(pd["_skip"]), md, links)
+                    if pd["_paths"]!="0": md, links = item_block(pd, idx+int(pd["_skip"]), md, links)
             return md, links
         # eugh
-        print("#Main weapon:",weapon_name)
-        pap_md += f"# {weapon_name}  \n"
+        pap_md += f"# {weapon_name}  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapons#{weapon_name})  \n"
         if "pappaths" in weapon_data:
-            pap_md, pap_links = item_block(weapon_name,{"_skip": "0", "_paths": weapon_data["pappaths"]}, pap_idx, pap_md, pap_links)
-        print("pap_md:", pap_md)
-        print("---")
+            pap_links = "**Paps**  \n"
+            pap_md, pap_links = item_block({"_skip": "0", "_paths": weapon_data["pappaths"]}, pap_idx, pap_md, pap_links)
         return pap_md, pap_links
 
 
