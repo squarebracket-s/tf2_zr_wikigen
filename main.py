@@ -32,17 +32,22 @@ def remove_multiline_comments(d): # Fixes the script interpreting the comment in
             new_str += line
     return new_str
 
+def fetch_wiki_image(filename): # Fetch image from the tf2 wiki (too lazy to extracts assets from tf2 itself)
+    # TODO
+    return None
+
 def compile_waveset_npc():
     print("Compiling Wavesets...")
 
     def extract_npc_data(path):
         file_data = read(path)
+        file_data = remove_multiline_comments(file_data)
         if ("npc_donoteveruse" not in file_data and "NPC_Add" in file_data):
-            file_data = remove_multiline_comments(file_data)
             # Get name
             name = file_data.split("	strcopy(data.Name, sizeof(data.Name), \"")[1].split("\");")[0]
             
             # Get plugin and health
+            # TODO: Case for non-shared file with multiple NPC_Add calls (-> different npc names) Example: raidmode_bosses/npc_god_alaxios.sp (sea-infected god alaxios isn't present in any redsun cfg!)
             if "shared" in path:
                 plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")
                 plugin = [item.split("\");")[0] for i,item in enumerate(plugin) if i > 0]
@@ -75,6 +80,14 @@ def compile_waveset_npc():
                 except IndexError:
                     health = "?"
                 plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")[1].split("\");")[0]
+            
+            # Get category
+            # TODO: Handling in shared case: store last read category and use it for every next npc if new definition not present
+            try:
+                category = file_data.split("	data.Category = ")[1].split(";")[0].split("Type_")[1]
+            except IndexError:
+                category = ""
+            
             # Get icon
             try:
                 icon = file_data.split("	strcopy(data.Icon, sizeof(data.Icon), \"")[1].split("\");")[0]
@@ -89,7 +102,7 @@ def compile_waveset_npc():
                 description = PHRASES_NPC_2[desc_key]["en"].replace("\\n","\n")
             else:
                 description = ""
-            return True, {"name": name, "description": description, "plugin": plugin, "icon": icon, "health": health}
+            return True, {"name": name, "description": description, "plugin": plugin, "icon": icon, "health": health, "hidden": (category == "Hidden")}
         return False, None
 
 
@@ -181,7 +194,7 @@ def compile_waveset_npc():
     NPCS_BY_FILENAME = parse_all_npcs()
 
     for waveset_name in WAVESET_LIST["Waves"]:
-        MARKDOWN_WAVESETS += f"- [{waveset_name}](#{waveset_name.lower().replace(" ","-")})\n"
+        MARKDOWN_WAVESETS += f"- [{waveset_name}](#{waveset_name.lower().replace(" ","-").replace("&","")})\n"
     
     for waveset_name in WAVESET_LIST["Waves"]:
         wave_cfg = read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{WAVESET_LIST["Waves"][waveset_name]["file"]}.cfg")
@@ -215,9 +228,11 @@ def compile_waveset_npc():
                 npc_name = npc_data["name"]
                 if npc_data["icon"]!="":
                     npc_icon_key = "leaderboard_class_"+npc_data["icon"]+".vtf"
-                    npc_icon_path = f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}"
                     npc_png_icon_path = f"hud_images/{npc_data["icon"]}.png"
-                    raw_npc_icon_path = f"./TF2-Zombie-Riot/dev_files_donot_use_for_server/hud_icons/WIP/RawClassIcons/leaderboard_class_{NPCS_BY_FILENAME[wave_entry_data["plugin"]]["icon"]}.png"
+                    
+                    # Paths to look in for icons
+                    npc_icon_path = f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}"
+                    raw_npc_icon_path = f"./TF2-Zombie-Riot/dev_files_donot_use_for_server/hud_icons/WIP/RawClassIcons/leaderboard_class_{npc_data["icon"]}.png"
                     if os.path.isfile(npc_icon_path):
                         if not os.path.isfile(npc_png_icon_path):
                             npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
@@ -228,11 +243,20 @@ def compile_waveset_npc():
                             os.rename(raw_npc_icon_path, npc_png_icon_path)
                         image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
                     elif not os.path.isfile(npc_png_icon_path): # if file doesn't exist already (in case of testing locally, where files aren't reset every time)
-                        image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
+                        image_wiki = fetch_wiki_image(npc_data["icon"]) #TODO
+                        if image_wiki:
+                            pass #TODO
+                        else:
+                            image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
                 else:
                     image = f'<img src="./hud_images/missing.png" alt="D" width="16"/>'
-                #MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](NPCs.md#{wave_entry_data["plugin"]}){extra_info}  \n"
-                MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{wave_entry_data["plugin"]}){extra_info}  \n"
+                # Testing different ways to link to other files' sections. doesn't seem to work on github wikis all that much
+                #MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](NPCs.md#{wave_entry_data["plugin"]}){extra_info}  \n" # links to raw file
+                #MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-")}){extra_info}  \n" # links to file, not the section though
+                if not npc_data["hidden"]: # NOTE: NPCs that are supposed to be hidden in the encyclopedia still have descriptions in zombieriot.phrases.item.gift.desc.txt
+                    MARKDOWN_WAVESETS += f"{count} {image} <a href=\"https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-")}\">{npc_name}</a> {extra_info}  \n"
+                else:
+                    MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
                 if wave_entry_data["plugin"] not in added_npc_ids:
                     added_npc_ids.append(wave_entry_data["plugin"])
                     npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
