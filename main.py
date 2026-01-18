@@ -263,7 +263,7 @@ def compile_waveset_npc():
                         added_npc_ids.append(wave_entry_data["plugin"])
                         npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
                         npc_cat = f"Category: {npc_data["category"]}  \n" if npc_data["category"] != "" else ""
-                        MARKDOWN_NPCS += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_cat}{npc_data["description"].replace("\\n","  \n  ")}  \n"
+                        MARKDOWN_NPCS += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_cat}{npc_data["description"].replace("\\n","<br>")}  \n"
                 else:
                     MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
     
