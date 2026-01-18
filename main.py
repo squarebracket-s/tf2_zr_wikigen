@@ -336,6 +336,7 @@ def compile_weapon():
 
 
     def interpret_weapon_paps(weapon_name,weapon_data):
+        # TODO: Implement pap_#_extra_desc
         """
         pap_#_pappaths define how many paps you can choose from below ("2" paths on "PaP 1" allows you to choose between "PaP 2" and "PaP 3")
         pap_#_papskip Skips a number of paps to choose ("1" skip on "PaP 1" allows you to choose "PaP 3" instead)
@@ -343,23 +344,24 @@ def compile_weapon():
         pap_idx = 0
         pap_md = ""
         pap_links = ""
-        def item_block(parent_pap,idx,md,links):
-            for _ in range(int(parent_pap["_paths"])):
+        def item_block(parent_pap,idx,md,links,DEPTH):
+            for i in range(int(parent_pap["_paths"])):
                 idx += 1
-                if "name" not in parent_pap: # First iter of blocks
-                    md += f"## _Path {idx}_  \n"
-                    links += f"_Path {idx}_  \n"
+                if int(parent_pap["_paths"])>1:
+                    md += f"## {"ㅤ"*DEPTH} _Path {i+1}_  \n"
+                    links += f"{"ㅤ"*DEPTH} _Path {i+1}_  \n"
                 pd = extract_pap_data(weapon_name,weapon_data,idx)#+int(parent_pap["_skip"]))
                 if pd:
-                    md += pap_data_to_md(pd)
-                    links += pap_data_to_link(pd)
-                    if pd["_paths"]!="0": md, links = item_block(pd, idx+int(pd["_skip"]), md, links)
+                    md += ("ㅤ"*DEPTH) + pap_data_to_md(pd)
+                    links += ("ㅤ"*DEPTH) + pap_data_to_link(pd)
+                    if pd["_paths"]!="0": md, links = item_block(pd, idx+int(pd["_skip"]), md, links,DEPTH+1)
             return md, links
         # eugh
         pap_md += f"# {weapon_name}  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapons#{weapon_name})  \n"
-        if "pappaths" in weapon_data:
-            pap_links = "**Paps**  \n"
-            pap_md, pap_links = item_block({"_skip": "0", "_paths": weapon_data["pappaths"]}, pap_idx, pap_md, pap_links)
+        if "pappaths" in weapon_data: init_pap_paths = weapon_data["pappaths"]
+        else: init_pap_paths = 1
+        pap_links = "**Paps**  \n"
+        pap_md, pap_links = item_block({"_skip": "0", "_paths": init_pap_paths}, pap_idx, pap_md, pap_links, 0)
         return pap_md, pap_links
 
 
@@ -412,4 +414,4 @@ def compile_weapon():
     write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
 
 compile_weapon()
-compile_waveset_npc()
+#compile_waveset_npc()
