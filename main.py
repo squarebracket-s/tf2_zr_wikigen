@@ -333,7 +333,7 @@ def compile_weapon():
         return f"### {(" "*depth)} {data["name"]} \\[{id_from_str(data["_attributes"])}\\]  \n{data["tags"]}  \n${data["cost"]}  \n{desc.replace("\\n","  \n")}  \n"
 
     def pap_data_to_link(data):
-        return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{data["name"].lower().replace(" ","-")}-{id_from_str(data["_attributes"])})  \n"
+        return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{"-"+data["name"].lower().replace(" ","-")}-{id_from_str(data["_attributes"])})  \n"
 
 
     def interpret_weapon_paps(weapon_name,weapon_data):
