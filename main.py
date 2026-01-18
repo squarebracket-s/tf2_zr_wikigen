@@ -330,7 +330,7 @@ def compile_weapon():
             desc = PHRASES_WEAPON[data["description"]]["en"]
         else:
             desc = data["description"] # some paps don't have translation for whatever reason lmao
-        return f"### {(" "*DEPTH)} {data["name"]} \\[{id_from_str(data["_attributes"])}\\]  \n{data["tags"]}  \n${data["cost"]}  \n{desc.replace("\\n","  \n")}  \n"
+        return f"### {(" "*depth)} {data["name"]} \\[{id_from_str(data["_attributes"])}\\]  \n{data["tags"]}  \n${data["cost"]}  \n{desc.replace("\\n","  \n")}  \n"
 
     def pap_data_to_link(data):
         return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{data["name"].lower().replace(" ","-")}-{id_from_str(data["_attributes"])})  \n"

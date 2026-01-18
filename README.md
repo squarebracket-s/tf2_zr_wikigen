@@ -6,6 +6,8 @@ Script that utilises code from https://github.com/artvin01/TF2-Zombie-Riot to ge
 Progress:
 - [x] Waveset data
 - [x] NPC data
-- [ ] Weapon data
+  - [ ] Case for non-shared file with multiple NPC_Add calls
+  - [ ] Handle health cases like carrier?4500:(elite?5000:4000)HP, data[0]?3750:3000HP, elite?7200:5700HP
+- [x] Weapon data
   - [x] Normal
-  - [ ] Paps
+  - [x] Paps
