@@ -32,5 +32,5 @@ jobs:
         cd tf2_zr_wikigen.wiki
         git add .
         git commit -m "Generate Wiki [$GITHUB_SHA]"
-        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
+        git remote set-url origin https://x-access-token:${{ secrets.WIKI_PAT }}@github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
         git push origin master
