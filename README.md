@@ -5,7 +5,7 @@ Script that utilises code from https://github.com/artvin01/TF2-Zombie-Riot to ge
 
 Progress:
 - [x] Waveset data
-- [ ] NPC data
+- [x] NPC data
 - [ ] Weapon data
   - [x] Normal
   - [ ] Paps
