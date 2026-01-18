@@ -2,7 +2,6 @@ import os
 from keyvalues1 import KeyValues1
 import vtf2img
 import re
-import json
 
 # Utility functions
 # U+3164 -> 'ㅤ'
@@ -32,9 +31,6 @@ def remove_multiline_comments(d): # Fixes the script interpreting the comment in
             new_str += line
     return new_str
 
-def fetch_wiki_image(filename): # Fetch image from the tf2 wiki (too lazy to extracts assets from tf2 itself)
-    # TODO
-    return None
 
 def compile_waveset_npc():
     print("Compiling Wavesets...")
@@ -52,9 +48,12 @@ def compile_waveset_npc():
                 plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")
                 plugin = [item.split("\");")[0] for i,item in enumerate(plugin) if i > 0]
 
+                category = file_data.split("	data.Category = ")
+                category = [item.split(";")[0] for i,item in enumerate(category) if i > 0]
+
                 base_path = path.replace(path.split("/")[-1],"") # remove deepest item
                 health = []
-                for p in plugin:
+                for i,p in enumerate(plugin):
                     p_data = read(base_path+p+".sp")
                     try:
                         h = p_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
@@ -80,14 +79,12 @@ def compile_waveset_npc():
                 except IndexError:
                     health = "?"
                 plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")[1].split("\");")[0]
-            
-            # Get category
-            # TODO: Handling in shared case: store last read category and use it for every next npc if new definition not present
-            try:
-                category = file_data.split("	data.Category = ")[1].split(";")[0].split("Type_")[1]
-            except IndexError:
-                category = ""
-            
+
+                try:
+                    category = file_data.split("	data.Category = ")[1].split(";")[0]
+                except IndexError:
+                    category = ""
+
             # Get icon
             try:
                 icon = file_data.split("	strcopy(data.Icon, sizeof(data.Icon), \"")[1].split("\");")[0]
@@ -102,7 +99,7 @@ def compile_waveset_npc():
                 description = PHRASES_NPC_2[desc_key]["en"].replace("\\n","\n")
             else:
                 description = ""
-            return True, {"name": name, "description": description, "plugin": plugin, "icon": icon, "health": health, "hidden": (category == "Hidden")}
+            return True, {"name": name, "category": category,"description": description, "plugin": plugin, "icon": icon, "health": health}
         return False, None
 
 
@@ -157,11 +154,20 @@ def compile_waveset_npc():
                 if type(plugin_name) == type([]):
                     for i,pn in enumerate(plugin_name):
                         pn_data = data[npc_file].copy()
-                        pn_data["health"] = pn_data["health"][i]
+                        pn_data["health"] = pn_data["health"][min(len(pn_data["health"])-1,i)]
+                        pn_data["category"] = pn_data["category"][min(len(pn_data["category"])-1,i)]
+                        pn_data["plugin"] = pn_data["plugin"][min(len(pn_data["plugin"])-1,i)]
                         npc_by_file[pn] = pn_data
                 else:                    
                     npc_by_file[plugin_name] = data[npc_file]
-        #write("npc_data.json",json.dumps(npc_by_file,indent=2))
+
+        if "DEBUG" in os.environ:
+            try:
+                if bool(os.environ["DEBUG"]):
+                    import json
+                    write("npc_data.json",json.dumps(npc_by_file,indent=2))
+            except ValueError:
+                print("DEBUG env couldn't be converted to bool!")
         return npc_by_file
     
 
@@ -201,13 +207,13 @@ def compile_waveset_npc():
         wave_cfg = unique_enemy_delays(wave_cfg)
         WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
         waveset_desc_key = WAVESET_LIST["Waves"][waveset_name]["desc"]
-        MARKDOWN_WAVESETS += f"# {waveset_name.replace(" ","-")}\n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","\n")}\n"
+        MARKDOWN_WAVESETS += f"# {waveset_name.replace(" ","-")}\n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","\n")}  \n[Back to Outline](#outline)  \n"
         for wave in WAVESET_DATA:
             try:
                 int(wave) # Check if key can be converted to a number to detect wave notation
             except ValueError:
                 continue
-            MARKDOWN_WAVESETS += f"## {wave}\n"
+            MARKDOWN_WAVESETS += f"## {wave}  \n"
             wave_data = WAVESET_DATA[wave]
             for wave_entry in wave_data:
                 try:
@@ -245,18 +251,14 @@ def compile_waveset_npc():
                     elif os.path.isfile(npc_png_icon_path): # Local testing has persistent env
                         image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
                     else:
-                        #image_wiki = fetch_wiki_image(npc_data["icon"]) #TODO
-                        #if image_wiki:
-                        #    pass #TODO
-                        #else:
                         image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
                 else:
                     image = f'<img src="./hud_images/missing.png" alt="D" width="16"/>'
                 # Testing different ways to link to other files' sections. doesn't seem to work on github wikis all that much
                 #MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](NPCs.md#{wave_entry_data["plugin"]}){extra_info}  \n" # links to raw file
                 #MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-")}){extra_info}  \n" # links to file, not the section though
-                if not npc_data["hidden"]: # NOTE: NPCs that are supposed to be hidden in the encyclopedia still have descriptions in zombieriot.phrases.item.gift.desc.txt
-                    MARKDOWN_WAVESETS += f"{count} {image} <a href=\"https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-")}\">{npc_name}</a> {extra_info}  \n"
+                if npc_data["category"] != "Type_Hidden": # NOTE: NPCs that are supposed to be hidden in the encyclopedia still have descriptions in zombieriot.phrases.item.gift.desc.txt
+                    MARKDOWN_WAVESETS += f"{count} {image} <a href=\"https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}\">{npc_name}</a> {extra_info}  \n"
                     if wave_entry_data["plugin"] not in added_npc_ids:
                         added_npc_ids.append(wave_entry_data["plugin"])
                         npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
@@ -264,7 +266,6 @@ def compile_waveset_npc():
                 else:
                     MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
     
-    # TODO: List of npcs by plugin name
     write("wavesets.md", MARKDOWN_WAVESETS)
     write("npcs.md", MARKDOWN_NPCS)
 
