@@ -1,0 +1,34 @@
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  generate_wiki:
+    name: generate-wiki
+    runs-on: ubuntu-22.04
+    steps:
+    - name: setup venv
+      run: python -m venv venv; ./venv/bin/pip install -r requirements.txt
+    
+    - name: clone zr repo
+      run: git clone https://github.com/artvin01/TF2-Zombie-Riot
+    
+    - name: run main script
+      run: ./venv/bin/python main.py
+
+    - name: clone repo wiki
+      run: git clone https://github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
+    
+    # TODO: main script should do this by itself
+    - name: move markdown into wiki
+      run: |
+        mv weapons.md ./tf2_zr_wikigen.wiki/Weapons.md
+        mv wavesets.md ./tf2_zr_wikigen.wiki/Wavesets.md
+
+    - name: push to wiki
+      run: |
+        cd tf2_zr_wikigen.wiki
+        git add .
+        git commit -m "Generate Wiki [$GITHUB_SHA]"
+        git push origin main
