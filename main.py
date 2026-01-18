@@ -132,13 +132,13 @@ def compile_waveset_npc():
         return w
 
 
-    PATH_NPC = "./addons/sourcemod/scripting/zombie_riot/npc/"
+    PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
     MARKDOWN_NPC = "# Outline:\n"
 
-    PHRASES_NPC = KeyValues1.parse(read("./addons/sourcemod/translations/zombieriot.phrases.zombienames.txt"))
-    PHRASES_NPC_2 = KeyValues1.parse(read("./addons/sourcemod/translations/zombieriot.phrases.item.gift.desc.txt"))
-    WAVESET_LIST = KeyValues1.parse(read("./addons/sourcemod/configs/zombie_riot/fastmode_redsun.cfg"))["Setup"]
-    PHRASES_WAVESET = KeyValues1.parse(read("./addons/sourcemod/translations/zombieriot.phrases.txt"))["Phrases"]
+    PHRASES_NPC = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.zombienames.txt"))
+    PHRASES_NPC_2 = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.item.gift.desc.txt"))
+    WAVESET_LIST = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/fastmode_redsun.cfg"))["Setup"]
+    PHRASES_WAVESET = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.txt"))["Phrases"]
 
     NPCS_BY_FILENAME = parse_all_npcs()
 
@@ -146,7 +146,7 @@ def compile_waveset_npc():
         MARKDOWN_NPC += f"- [{waveset_name}](#{waveset_name.lower().replace(" ","-")})\n"
     
     for waveset_name in WAVESET_LIST["Waves"]:
-        wave_cfg = read(f"./addons/sourcemod/configs/zombie_riot/{WAVESET_LIST["Waves"][waveset_name]["file"]}.cfg")
+        wave_cfg = read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{WAVESET_LIST["Waves"][waveset_name]["file"]}.cfg")
         wave_cfg = unique_enemy_delays(wave_cfg)
         WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
         waveset_desc_key = WAVESET_LIST["Waves"][waveset_name]["desc"]
@@ -174,12 +174,12 @@ def compile_waveset_npc():
                 npc_name = NPCS_BY_FILENAME[wave_entry_data["plugin"]]["name"]
                 if NPCS_BY_FILENAME[wave_entry_data["plugin"]]["icon"]!="":
                     npc_icon_key = "leaderboard_class_"+NPCS_BY_FILENAME[wave_entry_data["plugin"]]["icon"]+".vtf"
-                    npc_icon_path = f"./materials/hud/{npc_icon_key}"
+                    npc_icon_path = f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}"
                     npc_png_icon_path = f"hud_images/{NPCS_BY_FILENAME[wave_entry_data["plugin"]]["icon"]}.png"
                     if os.path.isfile(npc_icon_path):
                         if not os.path.isfile(npc_png_icon_path):
                             # TODO: Look into ./dev_files_donot_use_for_server/hud_icons/WIP/RawClassIcons/ png files
-                            npc_icon = vtf2img.Parser(f"./materials/hud/{npc_icon_key}").get_image()
+                            npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
                             npc_icon.save(npc_png_icon_path)
                         image = f'<img src="{npc_png_icon_path}" alt="C" width="16"/>'
                     else:
@@ -197,8 +197,8 @@ def compile_waveset_npc():
 def compile_weapon():
     print("Compiling weapon list...")
     MARKDOWN_WEAPON = ""
-    CFG_WEAPONS = KeyValues1.parse(read("./addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
-    PHRASES_WEAPON = KeyValues1.parse(read("./addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt").replace("'\n",'"\n'))["Phrases"]
+    CFG_WEAPONS = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
+    PHRASES_WEAPON = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt").replace("'\n",'"\n'))["Phrases"]
     
     def is_item_category(c):
         return "enhanceweapon_click" not in c and "cost" not in c
