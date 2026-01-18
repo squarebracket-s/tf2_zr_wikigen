@@ -6,6 +6,7 @@ import hashlib
 
 # Utility functions
 # U+3164 -> 'ㅤ'
+# also ' '
 
 def read(filename):
     try:
@@ -348,12 +349,12 @@ def compile_weapon():
             for i in range(int(parent_pap["_paths"])):
                 idx += 1
                 if int(parent_pap["_paths"])>1:
-                    md += f"## {"ㅤ"*DEPTH} _Path {i+1}_  \n"
-                    links += f"{"ㅤ"*DEPTH} _Path {i+1}_  \n"
+                    md += f"## {" "*DEPTH} _Path {i+1}_  \n"
+                    links += f"{" "*DEPTH} _Path {i+1}_  \n"
                 pd = extract_pap_data(weapon_name,weapon_data,idx)#+int(parent_pap["_skip"]))
                 if pd:
-                    md += ("ㅤ"*DEPTH) + pap_data_to_md(pd)
-                    links += ("ㅤ"*DEPTH) + pap_data_to_link(pd)
+                    md += (" "*DEPTH) + pap_data_to_md(pd)
+                    links += (" "*DEPTH) + pap_data_to_link(pd)
                     if pd["_paths"]!="0": md, links = item_block(pd, idx+int(pd["_skip"]), md, links,DEPTH+1)
             return md, links
         # eugh
