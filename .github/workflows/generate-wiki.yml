@@ -18,7 +18,12 @@ jobs:
     
     - name: clone zr repo
       run: git clone https://github.com/artvin01/TF2-Zombie-Riot
-    - run: ls
+    - name: clone wiki
+      run: |
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+        git clone https://github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
+
     - name: run main script
       run: ./venv/bin/python main.py
     
@@ -28,7 +33,7 @@ jobs:
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
         git clone https://github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
-        mv weapons.md ./tf2_zr_wikigen.wiki/Weapons.md
+        mv items.md ./tf2_zr_wikigen.wiki/Weapons.md
         mv wavesets.md ./tf2_zr_wikigen.wiki/Wavesets.md
         mv npcs.md ./tf2_zr_wikigen.wiki/NPCs.md
         mv weapon_paps.md ./tf2_zr_wikigen.wiki/Weapon_Paps.md

@@ -2,11 +2,17 @@ import os
 from keyvalues1 import KeyValues1
 import vtf2img
 import re
-import hashlib
+
+import util
 
 # Utility functions
 # U+3164 -> 'ㅤ'
 # also ' '
+WIKI_FILES = {
+    "items.md": "Items.md",
+    "weapon_paps.md": "Weapon_Paps.md",
+    "npcs.md": "NPCs.md"
+}
 
 def read(filename):
     try:
@@ -35,8 +41,6 @@ def remove_multiline_comments(d): # Fixes the script interpreting the comment in
 
 
 def compile_waveset_npc():
-    print("Compiling Wavesets...")
-
     def extract_npc_data(path):
         file_data = read(path)
         file_data = remove_multiline_comments(file_data)
@@ -96,9 +100,9 @@ def compile_waveset_npc():
             
             desc_key = f"{name} Desc"
             if desc_key in PHRASES_NPC:
-                description = PHRASES_NPC[desc_key]["en"].replace("\\n","\n")
+                description = PHRASES_NPC[desc_key]["en"].replace("\\n","  \n")
             elif desc_key in PHRASES_NPC_2:
-                description = PHRASES_NPC_2[desc_key]["en"].replace("\\n","\n")
+                description = PHRASES_NPC_2[desc_key]["en"].replace("\\n","  \n")
             else:
                 description = ""
             return True, {"name": name, "category": category,"description": description, "plugin": plugin, "icon": icon, "health": health}
@@ -177,103 +181,121 @@ def compile_waveset_npc():
         # Make each wave delay unique as not to lose out on info (for example if 2 enemies have same wave delay)
         # https://stackoverflow.com/questions/41941116/replace-each-occurrence-of-sub-strings-in-the-string-with-randomly-generated-val
         space = "		"
-        incl = ""
         for i in range(0,301):
             delay_str = f'{i/10:.1f}'
-            incl += delay_str + "\n"
             delay_count = w.count(delay_str)
-            w=w.replace("{","{{")
-            w=w.replace("}","}}")
-            w=w.replace(f'{space}"{delay_str}"', space+'"{}"')
+            w = w.replace("{","{{").replace("}","}}").replace(f'{space}"{delay_str}"', space+'"{}"')
             w = w.format(*(" "*i + delay_str for i in range(delay_count)))
         return w
+    
+
+    def parse_waveset_list_cfg(cfg, md_npc):
+        print(f"Parsing waveset list cfg: {cfg}")
+        MARKDOWN_WAVESETS = "# Outline\n"
+        WAVESET_LIST = KeyValues1.parse(read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{cfg}"))["Setup"]    
+        for waveset_name in WAVESET_LIST["Waves"]:
+            MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})\n"
+    
+        for waveset_name in WAVESET_LIST["Waves"]:
+            waveset_file = WAVESET_LIST["Waves"][waveset_name]["file"]
+            print(f"    Parsing waveset: {waveset_name} Filename: {waveset_file}")
+            wave_cfg = read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{waveset_file}.cfg")
+            wave_cfg = wave_cfg.replace("=", "").replace("`","") # Fix typos in wave cfg
+
+            # Waveset-specific typo fixes (or just removing lines that break the parser)
+            if waveset_file == "classic_iber&expi": wave_cfg=wave_cfg.replace('			"plugin"	"110000000"',"") # overrides actual plugin name before it, which is why it has to be removed
+            if waveset_file == "classic_interitus": wave_cfg=wave_cfg.replace('"npc_mad_doctor\n','"npc_mad_doctor"\n')
+            wave_cfg = unique_enemy_delays(wave_cfg)
+            WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
+            waveset_desc_key = WAVESET_LIST["Waves"][waveset_name]["desc"]
+            MARKDOWN_WAVESETS += f"# {waveset_name.replace(" ","-")}\n[Back to Outline](#outline)  \n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","\n")}  \n"
+            for wave in WAVESET_DATA:
+                try:
+                    int(wave) # Check if key can be converted to a number to detect wave notation
+                except ValueError:
+                    continue
+                MARKDOWN_WAVESETS += f"## {wave}  \n"
+                wave_data = WAVESET_DATA[wave]
+                for wave_entry in wave_data:
+                    try:
+                        float(wave_entry)
+                    except ValueError:
+                        continue
+                    wave_entry_data = wave_data[wave_entry]
+                    count = "1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
+                    npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
+                    extra_info = ""
+                    if "health" in wave_entry_data:
+                        extra_info += f" {wave_entry_data["health"]}HP"
+                    else:
+                        extra_info += f" {npc_data["health"]}"
+                    if "force_scaling" in wave_entry_data:
+                        if wave_entry_data["force_scaling"]=="1":
+                            extra_info += " _(scaled)_"
+                    npc_name = npc_data["name"]
+                    if npc_data["icon"]!="":
+                        npc_icon_key = "leaderboard_class_"+npc_data["icon"]+".vtf"
+                        npc_png_icon_path = f"hud_images/{npc_data["icon"]}.png"
+                        
+                        # Paths to look in for icons
+                        npc_icon_path = f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}"
+                        raw_npc_icon_path = f"./TF2-Zombie-Riot/dev_files_donot_use_for_server/hud_icons/WIP/RawClassIcons/leaderboard_class_{npc_data["icon"]}.png"
+                        if os.path.isfile(npc_icon_path):
+                            if not os.path.isfile(npc_png_icon_path):
+                                npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
+                                npc_icon.save(npc_png_icon_path)
+                            image = f'<img src="{npc_png_icon_path}" alt="A" width="16"/>'
+                        elif os.path.isfile(raw_npc_icon_path):
+                            if not os.path.isfile(npc_png_icon_path): # Local testing has persistent env
+                                os.rename(raw_npc_icon_path, npc_png_icon_path)
+                            image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
+                        elif os.path.isfile(npc_png_icon_path): # Local testing has persistent env
+                            image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
+                        else:
+                            image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
+                    else:
+                        image = f'<img src="./hud_images/missing.png" alt="D" width="16"/>'
+                    # Testing different ways to link to other files' sections. doesn't seem to work on github wikis all that much
+                    if npc_data["category"] != "Type_Hidden": # NOTE: NPCs that are supposed to be hidden in the encyclopedia still have descriptions in zombieriot.phrases.item.gift.desc.txt
+                        MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}) {extra_info}  \n"
+                        if wave_entry_data["plugin"] not in added_npc_ids:
+                            added_npc_ids.append(wave_entry_data["plugin"])
+                            npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
+                            npc_cat = f"Category: {npc_data["category"]}  \n" if npc_data["category"] != "" else ""
+                            md_npc += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_cat}{npc_data["description"]}  \n"
+                    else:
+                        MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
+
+        filename = f"wavesets_{cfg}.md"
+        display_name = f"Wavesets {cfg.replace(".cfg","").capitalize()}.md"
+        WIKI_FILES[filename] = display_name
+        write(filename, MARKDOWN_WAVESETS)
+        return md_npc
 
     # TODO: Map-specific wavesets such as Matrix
+    # NPC list is global to prevent duplicates
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
-    MARKDOWN_WAVESETS = "# Outline\n"
     MARKDOWN_NPCS = ""
     added_npc_ids = []
 
     PHRASES_NPC = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.zombienames.txt"))["Phrases"]
     PHRASES_NPC_2 = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.item.gift.desc.txt"))["Phrases"]
     PHRASES_WAVESET = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.txt"))["Phrases"]
-    WAVESET_LIST = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/fastmode_redsun.cfg"))["Setup"]
 
+    print("Parsing NPCs...")
     NPCS_BY_FILENAME = parse_all_npcs()
 
-    for waveset_name in WAVESET_LIST["Waves"]:
-        MARKDOWN_WAVESETS += f"- [{waveset_name}](#{waveset_name.lower().replace(" ","-").replace("&","")})\n"
-    
-    for waveset_name in WAVESET_LIST["Waves"]:
-        wave_cfg = read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{WAVESET_LIST["Waves"][waveset_name]["file"]}.cfg")
-        wave_cfg = unique_enemy_delays(wave_cfg)
-        WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
-        waveset_desc_key = WAVESET_LIST["Waves"][waveset_name]["desc"]
-        MARKDOWN_WAVESETS += f"# {waveset_name.replace(" ","-")}\n[Back to Outline](#outline)  \n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","\n")}  \n"
-        for wave in WAVESET_DATA:
-            try:
-                int(wave) # Check if key can be converted to a number to detect wave notation
-            except ValueError:
-                continue
-            MARKDOWN_WAVESETS += f"## {wave}  \n"
-            wave_data = WAVESET_DATA[wave]
-            for wave_entry in wave_data:
-                try:
-                    float(wave_entry)
-                except ValueError:
-                    continue
-                wave_entry_data = wave_data[wave_entry]
-                count = "1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
-                npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
-                extra_info = ""
-                if "health" in wave_entry_data:
-                    extra_info += f" {wave_entry_data["health"]}HP"
-                else:
-                    extra_info += f" {npc_data["health"]}"
-                if "force_scaling" in wave_entry_data:
-                    if wave_entry_data["force_scaling"]=="1":
-                        extra_info += " _(scaled)_"
-                npc_name = npc_data["name"]
-                if npc_data["icon"]!="":
-                    npc_icon_key = "leaderboard_class_"+npc_data["icon"]+".vtf"
-                    npc_png_icon_path = f"hud_images/{npc_data["icon"]}.png"
-                    
-                    # Paths to look in for icons
-                    npc_icon_path = f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}"
-                    raw_npc_icon_path = f"./TF2-Zombie-Riot/dev_files_donot_use_for_server/hud_icons/WIP/RawClassIcons/leaderboard_class_{npc_data["icon"]}.png"
-                    if os.path.isfile(npc_icon_path):
-                        if not os.path.isfile(npc_png_icon_path):
-                            npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
-                            npc_icon.save(npc_png_icon_path)
-                        image = f'<img src="{npc_png_icon_path}" alt="A" width="16"/>'
-                    elif os.path.isfile(raw_npc_icon_path):
-                        if not os.path.isfile(npc_png_icon_path): # Local testing has persistent env
-                            os.rename(raw_npc_icon_path, npc_png_icon_path)
-                        image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
-                    elif os.path.isfile(npc_png_icon_path): # Local testing has persistent env
-                        image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
-                    else:
-                        image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
-                else:
-                    image = f'<img src="./hud_images/missing.png" alt="D" width="16"/>'
-                # Testing different ways to link to other files' sections. doesn't seem to work on github wikis all that much
-                if npc_data["category"] != "Type_Hidden": # NOTE: NPCs that are supposed to be hidden in the encyclopedia still have descriptions in zombieriot.phrases.item.gift.desc.txt
-                    MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}) {extra_info}  \n"
-                    if wave_entry_data["plugin"] not in added_npc_ids:
-                        added_npc_ids.append(wave_entry_data["plugin"])
-                        npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
-                        npc_cat = f"Category: {npc_data["category"]}  \n" if npc_data["category"] != "" else ""
-                        MARKDOWN_NPCS += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_cat}{npc_data["description"].replace("\\n","<br>")}  \n"
-                else:
-                    MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
-    
-    write("wavesets.md", MARKDOWN_WAVESETS)
+    cfg_files = [
+        "classic.cfg",
+        "fastmode_redsun.cfg", 
+    #    "fastmode.cfg", # normal fastmode not included since modifiers aren't shown yet
+    ]
+    for f in cfg_files:
+        MARKDOWN_NPCS = parse_waveset_list_cfg(f, MARKDOWN_NPCS)
+
     write("npcs.md", MARKDOWN_NPCS)
 
 ## COMPILE WEAPON CFG -------------------------------------------------------------------------------------------------
-def id_from_str(string):
-    # https://stackoverflow.com/questions/49808639/generate-a-variable-length-hash
-    return hashlib.shake_256(string.encode("utf-8")).hexdigest(4)
 
 def compile_weapon():
     print("Compiling Weapon List...")
@@ -332,10 +354,10 @@ def compile_weapon():
             desc = data["description"] # some paps don't have translation for whatever reason lmao
         space_header = " "*depth
         space = " "*round(depth*1.5) # Scale a bit to align with header spacing
-        return f"### {space_header} {data["name"]} \\[{id_from_str(data["_attributes"])}\\]  \n{space if len(data["tags"])>0 else ""}{data["tags"]}{"  \n" if len(data["tags"])>0 else ""}{space}${data["cost"]}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n"
+        return f"### {space_header} {data["name"]} \\[{util.id_from_str(data["_attributes"])}\\]  \n{space if len(data["tags"])>0 else ""}{data["tags"]}{"  \n" if len(data["tags"])>0 else ""}{space}${data["cost"]}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n"
 
     def pap_data_to_link(data):
-        return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{"-"+data["name"].lower().replace(" ","-")}-{id_from_str(data["_attributes"])})  \n"
+        return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{util.to_section_link(data["name"],True)}-{util.id_from_str(data["_attributes"])})  \n"
 
 
     def interpret_weapon_paps(weapon_name,weapon_data):
@@ -360,7 +382,7 @@ def compile_weapon():
                     if pd["_paths"]!="0": md, links = item_block(pd, idx+int(pd["_skip"]), md, links,DEPTH+1)
             return md, links
         # eugh
-        pap_md += f"# {weapon_name}  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapons#{weapon_name.lower().replace(" ","-").replace(",","").replace("&","")})  \n"
+        pap_md += f"# {weapon_name}  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Items#{util.to_section_link(weapon_name)})  \n"
         if "pappaths" in weapon_data: init_pap_paths = weapon_data["pappaths"]
         else: init_pap_paths = 1
         pap_links = "**Paps**  \n"
@@ -380,7 +402,7 @@ def compile_weapon():
         if "desc" in weapon_data: 
             k = weapon_data["desc"]
             if k in PHRASES_WEAPON:
-                description = f"{PHRASES_WEAPON[k]["en"].replace("\\n","\n")}\n"
+                description = f"{PHRASES_WEAPON[k]["en"].replace("\\n","  \n")}\n"
             else: # this only exists because of the Infinity Blade
                 description = k
         else: description = ""
@@ -397,7 +419,7 @@ def compile_weapon():
             for item in data:
                 item_data = data[item]
                 if is_trophy(item_data):
-                    markdown += f"Trophy: {item}\n"
+                    markdown += f"Trophy: {item}  \n"
                 elif is_weapon(item_data):
                     m1, m2 = parse_weapon_data(item,item_data,depth)
                     markdown += m1
@@ -405,7 +427,7 @@ def compile_weapon():
                 elif item[0].isupper() and is_category(item_data) or "Perks" in item or "Trophies"==item: # unneeded data is always lowercase...
                     markdown, markdown_pap = item_block(item, item_data, depth, markdown, markdown_pap)
                 elif "whiteout" in item_data:
-                    markdown += f"Info: {item}\n"
+                    markdown += f"Info: {item}  \n"
         return markdown, markdown_pap
 
 
@@ -413,8 +435,13 @@ def compile_weapon():
         if is_item_category(CFG_WEAPONS[item_category]):
             MARKDOWN_WEAPON, MARKDOWN_WEAPON_PAP = item_block(item_category,CFG_WEAPONS[item_category],0,MARKDOWN_WEAPON,MARKDOWN_WEAPON_PAP)
 
-    write("weapons.md", MARKDOWN_WEAPON)
+    write("items.md", MARKDOWN_WEAPON)
     write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
 
 compile_weapon()
 compile_waveset_npc()
+
+# Move files to wiki
+if os.path.isdir("tf2_zr_wikigen.wiki/"):
+    for file in WIKI_FILES:
+        os.rename(file, f"tf2_zr_wikigen.wiki/{WIKI_FILES[file]}")
