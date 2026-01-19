@@ -188,7 +188,7 @@ def compile_waveset_npc():
             w = w.format(*(" "*i + delay_str for i in range(delay_count)))
         return w
 
-
+    # TODO: Map-specific wavesets such as Matrix
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
     MARKDOWN_WAVESETS = "# Outline\n"
     MARKDOWN_NPCS = ""
@@ -330,7 +330,9 @@ def compile_weapon():
             desc = PHRASES_WEAPON[data["description"]]["en"]
         else:
             desc = data["description"] # some paps don't have translation for whatever reason lmao
-        return f"### {(" "*depth)} {data["name"]} \\[{id_from_str(data["_attributes"])}\\]  \n{data["tags"]}  \n${data["cost"]}  \n{desc.replace("\\n","  \n")}  \n"
+        space_header = " "*depth
+        space = " "*round(depth*1.5) # Scale a bit to align with header spacing
+        return f"### {space_header} {data["name"]} \\[{id_from_str(data["_attributes"])}\\]  \n{space if len(data["tags"])>0 else ""}{data["tags"]}{"  \n" if len(data["tags"])>0 else ""}{space}${data["cost"]}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n"
 
     def pap_data_to_link(data):
         return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{"-"+data["name"].lower().replace(" ","-")}-{id_from_str(data["_attributes"])})  \n"
