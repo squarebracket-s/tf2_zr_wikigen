@@ -213,7 +213,8 @@ hud_images/
 tf2_zr_wikigen.wiki/
 
 weapons.md
-wavesets.md
+wavesets_fastmode_redsun.md
+wavesets_classic.cfg.md
 weapon_paps.md
 npcs.md
 npc_data.json

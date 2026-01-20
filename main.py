@@ -191,24 +191,23 @@ def compile_waveset_npc():
 
     def parse_waveset_list_cfg(cfg, md_npc):
         print(f"Parsing waveset list cfg: {cfg}")
-        MARKDOWN_WAVESETS = "# Outline\n"
+        MARKDOWN_WAVESETS = "# Outline  \n"
         WAVESET_LIST = KeyValues1.parse(read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{cfg}"))["Setup"]    
         for waveset_name in WAVESET_LIST["Waves"]:
-            MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})\n"
+            MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
     
         for waveset_name in WAVESET_LIST["Waves"]:
             waveset_file = WAVESET_LIST["Waves"][waveset_name]["file"]
             print(f"    Parsing waveset: {waveset_name} Filename: {waveset_file}")
             wave_cfg = read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{waveset_file}.cfg")
-            wave_cfg = wave_cfg.replace("=", "").replace("`","") # Fix typos in wave cfg
-
             # Waveset-specific typo fixes (or just removing lines that break the parser)
             if waveset_file == "classic_iber&expi": wave_cfg=wave_cfg.replace('			"plugin"	"110000000"',"") # overrides actual plugin name before it, which is why it has to be removed
-            if waveset_file == "classic_interitus": wave_cfg=wave_cfg.replace('"npc_mad_doctor\n','"npc_mad_doctor"\n')
             wave_cfg = unique_enemy_delays(wave_cfg)
             WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
+
             waveset_desc_key = WAVESET_LIST["Waves"][waveset_name]["desc"]
-            MARKDOWN_WAVESETS += f"# {waveset_name.replace(" ","-")}\n[Back to Outline](#outline)  \n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","\n")}  \n"
+            MARKDOWN_WAVESETS += f"# {waveset_name.replace(" ","-")}  \n[Back to Outline](#outline)  \n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")}  \n"
+            
             for wave in WAVESET_DATA:
                 try:
                     int(wave) # Check if key can be converted to a number to detect wave notation
@@ -255,8 +254,7 @@ def compile_waveset_npc():
                             image = f'<img src="./hud_images/missing.png" alt="C" width="16"/>'
                     else:
                         image = f'<img src="./hud_images/missing.png" alt="D" width="16"/>'
-                    # Testing different ways to link to other files' sections. doesn't seem to work on github wikis all that much
-                    if npc_data["category"] != "Type_Hidden": # NOTE: NPCs that are supposed to be hidden in the encyclopedia still have descriptions in zombieriot.phrases.item.gift.desc.txt
+                    if npc_data["category"] != "Type_Hidden":
                         MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}) {extra_info}  \n"
                         if wave_entry_data["plugin"] not in added_npc_ids:
                             added_npc_ids.append(wave_entry_data["plugin"])
@@ -272,7 +270,7 @@ def compile_waveset_npc():
         write(filename, MARKDOWN_WAVESETS)
         return md_npc
 
-    # TODO: Map-specific wavesets such as Matrix
+    # TODO: Map-specific wavesets such as Matrix (stored in addons/sourcemod/zombie_riot/config/maps/)
     # NPC list is global to prevent duplicates
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
     MARKDOWN_NPCS = ""
@@ -302,7 +300,7 @@ def compile_weapon():
     MARKDOWN_WEAPON = ""
     MARKDOWN_WEAPON_PAP = ""
     CFG_WEAPONS = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
-    PHRASES_WEAPON = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt").replace("'\n",'"\n'))["Phrases"]
+    PHRASES_WEAPON = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt"))["Phrases"]
     
     def is_item_category(c):
         return "enhanceweapon_click" not in c and "cost" not in c
@@ -402,20 +400,20 @@ def compile_weapon():
         if "desc" in weapon_data: 
             k = weapon_data["desc"]
             if k in PHRASES_WEAPON:
-                description = f"{PHRASES_WEAPON[k]["en"].replace("\\n","  \n")}\n"
+                description = f"{PHRASES_WEAPON[k]["en"].replace("\\n","  \n").replace("\n-","\n - ")}  \n"
             else: # this only exists because of the Infinity Blade
                 description = k
         else: description = ""
 
         pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
         
-        return f"##{"#"*depth} {weapon_name}\n{tags}  \n{author}  \n{cost}  \n{description}  \n{pap_links}  ", pap_md
+        return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{description}  \n{pap_links}  ", pap_md
 
 
     def item_block(key,data,depth,markdown,markdown_pap):
         if "hidden" not in data:
             depth += 1
-            markdown += f"#{"#"*depth} {key}\n"
+            markdown += f"#{"#"*depth} {key}  \n"
             for item in data:
                 item_data = data[item]
                 if is_trophy(item_data):
