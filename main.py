@@ -400,9 +400,11 @@ def compile_weapon():
         if "desc" in weapon_data: 
             k = weapon_data["desc"]
             if k in PHRASES_WEAPON:
-                description = f"{PHRASES_WEAPON[k]["en"].replace("\\n","  \n").replace("\n-","\n - ")}  \n"
+                description = PHRASES_WEAPON[k]["en"]
             else: # this only exists because of the Infinity Blade
                 description = k
+            description = description.replace("\\n","  \n").replace("\n-","\n - ") + "  \n"
+            if description.startswith("-"): description=" - "+description[1:]
         else: description = ""
 
         pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
