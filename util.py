@@ -4,4 +4,13 @@ def id_from_str(string):
     return hashlib.shake_256(string.encode("utf-8")).hexdigest(4)
 
 def to_section_link(str_, pre_h=False):
-    return f"{"-"*int(pre_h)}{str_.lower().replace(" ","-").replace("&","").replace("[","").replace("]","").replace(",","")}"
+    remove = [
+        "&",
+        "[",
+        "]",
+        "'",
+        ","
+    ]
+    for r in remove:
+        str_ = str_.replace(r,"")
+    return f"{"-"*int(pre_h)}{str_.lower().replace(" ","-")}"
