@@ -461,7 +461,7 @@ def compile_skilltree():
 - REQ: Required item to unlock skill
 
 ```mermaid
-    %%{init:{'theme':'dark'}}%%
+    %%{init:{'theme':'forest'}}%%
     mindmap"""
     def skill_block(x,y,skill,parent_skill_key,skill_md,depth):
         depth += 1
