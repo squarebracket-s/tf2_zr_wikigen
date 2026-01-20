@@ -442,6 +442,7 @@ def compile_weapon():
 ## COMPILE SKILLTREE CFG -------------------------------------------------------------------------------------------------
 
 def compile_skilltree():
+    print("Compiling Skilltree...")
     """
     	"name"		"Luck Up 1"	// Name
         "player"	"SkillPlayer_LuckUp"	// Function
@@ -459,7 +460,7 @@ def compile_skilltree():
 - REQ: Required item to unlock skill
 
 ```mermaid
-    %%{init:{'theme':'forest'}}%%
+    %%{init:{'theme':'dark'}}%%
     mindmap"""
     def skill_block(x,y,skill,parent_skill_key,skill_md,depth):
         depth += 1
