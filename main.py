@@ -457,7 +457,7 @@ def compile_skilltree():
     MARKDOWN_SKILLTREE = """## Legend
 - MIN: Minimum amount of ranks needed in parent skill to unlock  
 - MAX: Maximum rank  
-- COST: Cost per rank  
+- COST: Amount of points needed per rank  
 - REQ: Required item to unlock skill
 
 ```mermaid
