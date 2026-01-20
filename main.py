@@ -455,8 +455,9 @@ def compile_skilltree():
     SKILLTREE_CFG = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/skilltree.cfg"))
     # strange formatting of the string I know
     MARKDOWN_SKILLTREE = """## Legend
-- MIN: Minimum amount of points needed in parent skill to unlock  
-- MAX: Maximum points  
+- MIN: Minimum amount of ranks needed in parent skill to unlock  
+- MAX: Maximum rank  
+- COST: Cost per rank  
 - REQ: Required item to unlock skill
 
 ```mermaid
