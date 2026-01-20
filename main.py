@@ -11,7 +11,8 @@ import util
 WIKI_FILES = {
     "items.md": "Items.md",
     "weapon_paps.md": "Weapon_Paps.md",
-    "npcs.md": "NPCs.md"
+    "npcs.md": "NPCs.md",
+    "skilltree.md": "Skilltree.md"
 }
 
 def read(filename):
@@ -438,10 +439,60 @@ def compile_weapon():
     write("items.md", MARKDOWN_WEAPON)
     write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
 
+## COMPILE SKILLTREE CFG -------------------------------------------------------------------------------------------------
+
+def compile_skilltree():
+    """
+    	"name"		"Luck Up 1"	// Name
+        "player"	"SkillPlayer_LuckUp"	// Function
+    //	"weapon"	"Tree_LuckUp"	// Functio	n
+        "max"	"5"	// Max Charges	
+        "cost"	"1"	// Point Cos	t
+    //	"min"	"-1"	// Charge Required from Paren	t
+    //	"key"	""	// Inventory Item Required
+    """
+    SKILLTREE_CFG = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/skilltree.cfg"))
+    # strange formatting of the string I know
+    MARKDOWN_SKILLTREE = """## Legend
+- MIN: Minimum amount of points needed in parent skill to unlock  
+- MAX: Maximum points  
+- REQ: Required item to unlock skill
+
+```mermaid
+    %%{init:{'theme':'forest'}}%%
+    mindmap"""
+    def skill_block(x,y,skill,parent_skill_key,skill_md,depth):
+        depth += 1
+        for subskill in skill.keys():
+            if subskill.startswith("a"): # detect if key is an actual skill
+                data = skill[subskill]
+
+                if "min" in data: min_pts = f"\nMIN {data["min"]}"
+                else: min_pts = ""
+
+                if "key" in data: required_item = f"\nREQ {data["key"]}"
+                else: required_item = ""
+
+                if "cost" in data: cost = f"\nCOST {data["cost"]}"
+                else: cost = ""
+
+                desc = f"{data["name"]}{cost}\nMAX {data["max"]}{min_pts}{required_item}"
+                skill_md += f'{" "*depth}{subskill}["{desc}"]\n'
+                skill_md = skill_block(x,y,data,subskill,skill_md,depth)
+        return skill_md
+    
+    MARKDOWN_SKILLTREE = skill_block(0,0,SKILLTREE_CFG,list(SKILLTREE_CFG.keys())[0],MARKDOWN_SKILLTREE,0)
+    MARKDOWN_SKILLTREE += "```"
+    write("skilltree.md", MARKDOWN_SKILLTREE)
+
 compile_weapon()
 compile_waveset_npc()
+compile_skilltree()
 
 # Move files to wiki
 if os.path.isdir("tf2_zr_wikigen.wiki/"):
     for file in WIKI_FILES:
-        os.rename(file, f"tf2_zr_wikigen.wiki/{WIKI_FILES[file]}")
+        if os.path.isfile(file):
+            os.rename(file, f"tf2_zr_wikigen.wiki/{WIKI_FILES[file]}")
+        else:
+            print(f"Missing file {file}: cannot move into wiki")

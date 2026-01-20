@@ -13,5 +13,4 @@ Progress:
 - [x] Weapon data
   - [x] Normal
   - [x] Paps
-- [ ] Skill tree data
-- [ ] Gift item data
+- [x] Skill tree data
