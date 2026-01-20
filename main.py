@@ -206,7 +206,7 @@ def compile_waveset_npc():
             WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
 
             waveset_desc_key = WAVESET_LIST["Waves"][waveset_name]["desc"]
-            MARKDOWN_WAVESETS += f"# {waveset_name.replace(" ","-")}  \n[Back to Outline](#outline)  \n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")}  \n"
+            MARKDOWN_WAVESETS += f"# {waveset_name}  \n[Back to Outline](#outline)  \n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")}  \n"
             
             for wave in WAVESET_DATA:
                 try:
