@@ -197,11 +197,15 @@ def compile_waveset_npc():
         if "Custom" in WAVESET_LIST: # map-specific waveset list config
             WAVESET_LIST = WAVESET_LIST["Custom"]
         WAVESET_LIST = WAVESET_LIST["Setup"]
-        
-        MARKDOWN_WAVESETS = f"Starting cash: {WAVESET_LIST["cash"]}  \n# Outline  \n"
+
+        MARKDOWN_WAVESETS = f"Starting cash: ${WAVESET_LIST["cash"]}  \n# Wavesets  \n"
         for waveset_name in WAVESET_LIST["Waves"]:
             MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
-    
+        
+        MARKDOWN_WAVESETS = f"# Modifiers  \n"
+        for modifiers in WAVESET_LIST["Modifiers"]:
+            MARKDOWN_WAVESETS += f"- [{modifiers}](#{util.to_section_link(modifiers)})  \n"    
+        
         for waveset_name in WAVESET_LIST["Waves"]:
             waveset_file = WAVESET_LIST["Waves"][waveset_name]["file"]
             print(f"    Parsing waveset: {waveset_name} | Filename: {waveset_file}")
@@ -212,7 +216,7 @@ def compile_waveset_npc():
             WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
 
             waveset_desc_key = WAVESET_LIST["Waves"][waveset_name]["desc"]
-            MARKDOWN_WAVESETS += f"# {waveset_name}  \n[Back to Outline](#outline)  \n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")}  \n"
+            MARKDOWN_WAVESETS += f"# {waveset_name}  \n[Back to top](#wavesets)  \n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")}  \n"
             
             for wave in WAVESET_DATA:
                 try:
@@ -269,6 +273,10 @@ def compile_waveset_npc():
                             md_npc += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_cat}{npc_data["description"]}  \n"
                     else:
                         MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
+            
+        for modifier in WAVESET_LIST["Modifiers"]:
+            data = WAVESET_LIST["Modifiers"][modifier]
+            MARKDOWN_WAVESETS += f"# {modifier}  \nMinimum level: {data["level"]*1000}  \n{PHRASES_NPC_2[data["desc"]]}"
 
         filename = f"wavesets_{cfg}.md"
         display_name = f"Wavesets {cfg.replace(".cfg","").capitalize()}.md"
@@ -362,14 +370,14 @@ def compile_weapon():
         else:
             desc = data["description"] # some paps don't have translation for whatever reason lmao
         
-        desc = data["extra_desc"] if len(data["extra_desc"]) > 0 else ""
+        extra_desc = data["extra_desc"] if len(data["extra_desc"]) > 0 else ""
         space_header = " "*depth
         space = " "*round(depth*1.5) # Scale a bit to align with header spacing
 
         if len(data["tags"])>0: tags = f"{space}{data["tags"]}  \n"
         else: tags = ""
 
-        return f"### {space_header} {data["name"]} \\[{util.id_from_str(data["_attributes"])}\\]  \n{tags}{space}${data["cost"]}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n"
+        return f"### {space_header} {data["name"]} \\[{util.id_from_str(data["_attributes"])}\\]  \n{tags}{space}${data["cost"]}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n{space}{extra_desc.replace("\\n",f"  \n{space}")}"
 
     def pap_data_to_link(data):
         return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{util.to_section_link(data["name"],True)}-{util.id_from_str(data["_attributes"])})  \n"
