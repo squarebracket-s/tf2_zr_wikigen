@@ -202,7 +202,7 @@ def compile_waveset_npc():
         for waveset_name in WAVESET_LIST["Waves"]:
             MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
         
-        MARKDOWN_WAVESETS = f"# Modifiers  \n"
+        MARKDOWN_WAVESETS += f"# Modifiers  \n"
         for modifiers in WAVESET_LIST["Modifiers"]:
             MARKDOWN_WAVESETS += f"- [{modifiers}](#{util.to_section_link(modifiers)})  \n"    
         
