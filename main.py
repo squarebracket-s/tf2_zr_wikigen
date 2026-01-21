@@ -299,7 +299,7 @@ def compile_waveset_npc():
 
     cfg_files = [
         "classic.cfg",
-        "fastmode.cfg"
+        "fastmode.cfg",
         "fastmode_redsun.cfg", 
     ]
     for f in cfg_files:
