@@ -279,7 +279,7 @@ def compile_waveset_npc():
             MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{PHRASES_NPC_2[data["desc"]]["en"].replace("\\n","  \n")}  \n"
 
         filename = f"wavesets_{cfg}.md"
-        display_name = f"Wavesets {cfg.replace(".cfg","").replace("_","").capitalize()}.md"
+        display_name = f"Wavesets {cfg.replace(".cfg","").replace("_"," ").capitalize()}.md"
         WIKI_FILES[filename] = display_name
         write(filename, MARKDOWN_WAVESETS)
         return md_npc

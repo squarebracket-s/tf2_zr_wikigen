@@ -23,6 +23,7 @@ jobs:
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
         git clone https://github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
+        rm -r ./tf2_zr_wikigen.wiki/
 
     - name: Parse ZR repo code
       run: ./venv/bin/python main.py
@@ -30,7 +31,6 @@ jobs:
     # TODO: main script should move markdown into wiki by itself?
     - name: Move hud_images to wiki
       run: |
-        rm -r ./tf2_zr_wikigen.wiki/hud_images/
         mv hud_images/ ./tf2_zr_wikigen.wiki/hud_images/
 
     - name: Push to wiki
