@@ -276,7 +276,7 @@ def compile_waveset_npc():
             
         for modifier in WAVESET_LIST["Modifiers"]:
             data = WAVESET_LIST["Modifiers"][modifier]
-            MARKDOWN_WAVESETS += f"# {modifier}  \nMinimum level: {float(data["level"])*1000}  \n{PHRASES_NPC_2[data["desc"]]["en"].replace("\\n","  \n")}  \n"
+            MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{PHRASES_NPC_2[data["desc"]]["en"].replace("\\n","  \n")}  \n"
 
         filename = f"wavesets_{cfg}.md"
         display_name = f"Wavesets {cfg.replace(".cfg","").capitalize()}.md"
