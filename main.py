@@ -185,21 +185,26 @@ def compile_waveset_npc():
         for i in range(0,301):
             delay_str = f'{i/10:.1f}'
             delay_count = w.count(delay_str)
-            w = w.replace("{","{{").replace("}","}}").replace(f'{space}"{delay_str}"', space+'"{}"')
+            w = w.replace("{","{{").replace("}","}}") # double curly brackets get ignored by .format
+            w = w.replace(f'{space}"{delay_str}"', space+'"{}"')
             w = w.format(*(" "*i + delay_str for i in range(delay_count)))
         return w
     
 
     def parse_waveset_list_cfg(cfg, md_npc):
         print(f"Parsing waveset list cfg: {cfg}")
-        MARKDOWN_WAVESETS = "# Outline  \n"
-        WAVESET_LIST = KeyValues1.parse(read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{cfg}"))["Setup"]    
+        WAVESET_LIST = KeyValues1.parse(read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{cfg}"))
+        if "Custom" in WAVESET_LIST: # map-specific waveset list config
+            WAVESET_LIST = WAVESET_LIST["Custom"]
+        WAVESET_LIST = WAVESET_LIST["Setup"]
+        
+        MARKDOWN_WAVESETS = f"Starting cash: {WAVESET_LIST["cash"]}  \n# Outline  \n"
         for waveset_name in WAVESET_LIST["Waves"]:
             MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
     
         for waveset_name in WAVESET_LIST["Waves"]:
             waveset_file = WAVESET_LIST["Waves"][waveset_name]["file"]
-            print(f"    Parsing waveset: {waveset_name} Filename: {waveset_file}")
+            print(f"    Parsing waveset: {waveset_name} | Filename: {waveset_file}")
             wave_cfg = read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{waveset_file}.cfg")
             # Waveset-specific typo fixes (or just removing lines that break the parser)
             if waveset_file == "classic_iber&expi": wave_cfg=wave_cfg.replace('			"plugin"	"110000000"',"") # overrides actual plugin name before it, which is why it has to be removed
@@ -333,6 +338,7 @@ def compile_weapon():
             if pap_key+"tags" in weapon_data: pap_tags = " ".join(f"#{tag}" for tag in weapon_data[pap_key+"tags"].split(";") if tag != "")
             else: pap_tags = ""
 
+            # There has got to a better way to do this
             key_papskip = pap_key+"papskip"
             if key_papskip in weapon_data: pap_skip = weapon_data[key_papskip]
             else: pap_skip = "0"
@@ -341,9 +347,13 @@ def compile_weapon():
             if key_pappaths in weapon_data: pap_paths = weapon_data[key_pappaths]
             else: pap_paths = "1"
 
+            key_extra_desc = pap_key+"extra_desc"
+            if key_extra_desc in weapon_data: pap_extra_desc = weapon_data[key_extra_desc]
+            else: pap_extra_desc = ""
+
             pap_attributes = weapon_data[pap_key+"attributes"]
 
-            return {"name": pap_name, "description": pap_desc, "cost": pap_cost, "tags": pap_tags, "_skip": pap_skip, "_paths": pap_paths, "_attributes": pap_attributes}
+            return {"name": pap_name, "description": pap_desc, "extra_desc": pap_extra_desc, "cost": pap_cost, "tags": pap_tags, "_skip": pap_skip, "_paths": pap_paths, "_attributes": pap_attributes}
         return None
     
     def pap_data_to_md(data,depth):
@@ -351,16 +361,21 @@ def compile_weapon():
             desc = PHRASES_WEAPON[data["description"]]["en"]
         else:
             desc = data["description"] # some paps don't have translation for whatever reason lmao
+        
+        desc = data["extra_desc"] if len(data["extra_desc"]) > 0 else ""
         space_header = " "*depth
         space = " "*round(depth*1.5) # Scale a bit to align with header spacing
-        return f"### {space_header} {data["name"]} \\[{util.id_from_str(data["_attributes"])}\\]  \n{space if len(data["tags"])>0 else ""}{data["tags"]}{"  \n" if len(data["tags"])>0 else ""}{space}${data["cost"]}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n"
+
+        if len(data["tags"])>0: tags = f"{space}{data["tags"]}  \n"
+        else: tags = ""
+
+        return f"### {space_header} {data["name"]} \\[{util.id_from_str(data["_attributes"])}\\]  \n{tags}{space}${data["cost"]}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n"
 
     def pap_data_to_link(data):
         return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{util.to_section_link(data["name"],True)}-{util.id_from_str(data["_attributes"])})  \n"
 
 
     def interpret_weapon_paps(weapon_name,weapon_data):
-        # TODO: Implement pap_#_extra_desc
         """
         pap_#_pappaths define how many paps you can choose from below ("2" paths on "PaP 1" allows you to choose between "PaP 2" and "PaP 3")
         pap_#_papskip Skips a number of paps to choose ("1" skip on "PaP 1" allows you to choose "PaP 3" instead)

@@ -212,10 +212,10 @@ hud_images/
 .obsidian/
 tf2_zr_wikigen.wiki/
 
-weapons.md
+items.md
 wavesets_fastmode_redsun.cfg.md
 wavesets_classic.cfg.md
 weapon_paps.md
 npcs.md
-npc_data.json
 skilltree.md
+npc_data.json
