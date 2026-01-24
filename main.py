@@ -333,6 +333,7 @@ def compile_weapon():
     print("Compiling Weapon List...")
     MARKDOWN_WEAPON = ""
     MARKDOWN_WEAPON_PAP = ""
+    tags = []
     CFG_WEAPONS = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
     PHRASES_WEAPON = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt"))["Phrases"]
     
@@ -432,8 +433,13 @@ def compile_weapon():
         return pap_md, pap_links
 
 
-    def parse_weapon_data(weapon_name, weapon_data, depth):
-        if "tags" in weapon_data: tags = " ".join(f"#{tag}" for tag in weapon_data["tags"].split(";") if tag != "")
+    def parse_weapon_data(weapon_name, weapon_data, depth, gtags):
+        if "tags" in weapon_data:
+            taglist = weapon_data["tags"].split(";")
+            if "," in weapon_data["tags"]: taglist = weapon_data["tags"].split(",") # crystal shard uses commas instead of semicolons. blame artvin
+            tags = " ".join(f"#{tag}" for tag in taglist if tag != "" and len(tag)>2)
+            for tag in taglist:
+                if tag not in gtags and len(tag)>2: gtags.append(tag)
         else: tags = ""
 
         if "author" in weapon_data: author = f"Author: {weapon_data["author"]}"
@@ -453,10 +459,10 @@ def compile_weapon():
 
         pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
         
-        return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{description}  \n{pap_links}  ", pap_md
+        return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{description}  \n{pap_links}  ", pap_md, gtags
 
 
-    def item_block(key,data,depth,markdown,markdown_pap):
+    def item_block(key,data,depth,markdown,markdown_pap,tags):
         if "hidden" not in data:
             depth += 1
             markdown += f"#{"#"*depth} {key}  \n"
@@ -465,19 +471,22 @@ def compile_weapon():
                 if is_trophy(item_data):
                     markdown += f"Trophy: {item}  \n"
                 elif is_weapon(item_data):
-                    m1, m2 = parse_weapon_data(item,item_data,depth)
+                    m1, m2, tags = parse_weapon_data(item,item_data,depth,tags)
                     markdown += m1
                     markdown_pap += m2
                 elif item[0].isupper() and is_category(item_data) or "Perks" in item or "Trophies"==item: # unneeded data is always lowercase...
-                    markdown, markdown_pap = item_block(item, item_data, depth, markdown, markdown_pap)
+                    markdown, markdown_pap, tags = item_block(item, item_data, depth, markdown, markdown_pap, tags)
                 elif "whiteout" in item_data:
                     markdown += f"Info: {item}  \n"
-        return markdown, markdown_pap
+        return markdown, markdown_pap, tags
 
 
     for item_category in CFG_WEAPONS:
         if is_item_category(CFG_WEAPONS[item_category]):
-            MARKDOWN_WEAPON, MARKDOWN_WEAPON_PAP = item_block(item_category,CFG_WEAPONS[item_category],0,MARKDOWN_WEAPON,MARKDOWN_WEAPON_PAP)
+            MARKDOWN_WEAPON, MARKDOWN_WEAPON_PAP, tags = item_block(item_category,CFG_WEAPONS[item_category],0,MARKDOWN_WEAPON,MARKDOWN_WEAPON_PAP, tags)
+    
+    taglist_str = "  \n".join({f" - #{tag}" for tag in tags})
+    MARKDOWN_WEAPON = f"**Available tags:** \n{taglist_str}  \n"+MARKDOWN_WEAPON
 
     write("items.md", MARKDOWN_WEAPON)
     write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
