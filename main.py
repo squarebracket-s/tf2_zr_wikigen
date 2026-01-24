@@ -439,7 +439,7 @@ def compile_weapon():
             if "," in weapon_data["tags"]: taglist = weapon_data["tags"].split(",") # crystal shard uses commas instead of semicolons. blame artvin
             tags = " ".join(f"#{tag}" for tag in taglist if tag != "" and len(tag)>2)
             for tag in taglist:
-                if tag not in gtags and len(tag)>2: gtags.append(tag)
+                if tag.capitalize() not in gtags and tag not in gtags and len(tag)>2: gtags.append(tag)
         else: tags = ""
 
         if "author" in weapon_data: author = f"Author: {weapon_data["author"]}"
