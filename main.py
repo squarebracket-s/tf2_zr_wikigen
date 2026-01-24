@@ -16,7 +16,7 @@ WIKI_FILES = {
     "skilltree.md": "Skilltree.md"
 }
 BUILTIN_IMG = "https://raw.githubusercontent.com/squarebracket-s/tf2_zr_wikigen/refs/heads/main/builtin_img/"
-ICON_LINK = util.md_img(BUILTIN_IMG+"external-link.svg", "external-link")
+ICON_DOWNLOAD = util.md_img(BUILTIN_IMG+"download.svg", "download")
 ICON_X_SQUARE = util.md_img(BUILTIN_IMG+"x-square.svg","cross")
 ICON_MUSIC = util.md_img(BUILTIN_IMG+"music.svg","music")
 
@@ -209,16 +209,19 @@ def compile_waveset_npc():
             MARKDOWN_WAVESETS += f"# {waveset_name}  \n[Back to top](#wavesets)  \n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")}  \n"
             
             for wave in WAVESET_DATA:
+                wave_data = WAVESET_DATA[wave]
                 try:
                     int(wave) # Check if key can be converted to a number to detect wave notation
                 except ValueError:
                     if wave.startswith("music_"):
                         music_case = wave.split("_")[1].capitalize()
-                        music = f"{WAVESET_DATA[wave]["name"]} by {WAVESET_DATA[wave]["author"]}"
-                        MARKDOWN_WAVESETS += f"{ICON_MUSIC} **{music_case}:** {music}  \n"
+                        music = f"{wave_data["name"]} by {wave_data["author"]}"
+                        mfilename = wave_data["file"].replace("#","")
+                        file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
+                        if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
+                        MARKDOWN_WAVESETS += f"{ICON_MUSIC} **{music_case}:** {music} {file}  \n"
                     continue
                 MARKDOWN_WAVESETS += f"## {wave}  \n"
-                wave_data = WAVESET_DATA[wave]
                 for wave_entry in wave_data:
                     wave_entry_data = wave_data[wave_entry]
                     try:
@@ -238,7 +241,7 @@ def compile_waveset_npc():
                                 else: author = ""
                                 music = f"{name} {author}"
                                 mfilename = wave_entry_data["file"].replace("#","")
-                            file = f"[{ICON_LINK}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
+                            file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
                             if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
                             MARKDOWN_WAVESETS += f"{ICON_MUSIC} {music.replace("_","\\_")} {file}  \n"
                         continue

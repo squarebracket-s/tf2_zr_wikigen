@@ -30,7 +30,7 @@ jobs:
     - name: Parse ZR repo code
       run: ./venv/bin/python main.py
     
-    - name: Move repo_img to wiki
+    - name: Move repo_img and builtin_img to wiki
       run: |
         mv repo_img/ ./tf2_zr_wikigen.wiki/repo_img/
         mv builtin_img/ ./tf2_zr_wikigen.wiki/builtin_img/
