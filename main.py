@@ -93,28 +93,25 @@ def compile_waveset_npc():
                         extra "data" fields for enemies (lists, numbers or types like "Elite")
                         'data[0]?x' is probably checking if any value from the waveset cfg exists at all to use x? 
                         """
-
-                        """
-                        case_txt = ""
-                        print("---")
-                        print("Original",health)
-                        print("^")
-                        def case_to_txt(c):
-                            if "?" in c:
-                                pass
-                            else:
-                                pass
                         cases = health.split(":(")
                         if len(cases) == 0: cases = health.split(":")
+                        health = {}
+                        def parse_case(c):
+                            if "?" in c:
+                                k,v = c.split("?")
+                                if k.startswith("data"): k="any"
+                            else:
+                                k,v = "default", c
+                            return k,v
                         for case in cases:
                             if ":" in case:
                                 subcases = case.split(":")
                                 for subcase in subcases:
-                                    print("Subcase", subcase)
+                                    k,v = parse_case(subcase)
+                                    health[k] = v
                             else:
-                                print("Case", case)
-                        print("###")
-                        """
+                                k,v = parse_case(case)
+                                health[k] = v
                     else:
                         health = health + "HP"
                 except IndexError:
@@ -253,7 +250,17 @@ def compile_waveset_npc():
                     if "health" in wave_entry_data:
                         extra_info += f" {wave_entry_data["health"]}HP"
                     else:
-                        extra_info += f" {npc_data["health"]}"
+                        if type(npc_data["health"]) == type({}):
+                            if "data" in wave_entry_data:
+                                data_key = wave_entry_data["data"]
+                                if data_key.lower() in npc_data["health"]: h = f" Type: {data_key} {npc_data["health"][data_key.lower()]}"
+                                elif "any" in npc_data["health"]: h = f" Type: {data_key} {npc_data["health"]["any"]}"
+                                else: h = npc_data["health"]["default"]
+                            else:
+                                h = npc_data["health"]["default"]
+                            extra_info += f" {h}HP"
+                        else:
+                            extra_info += f" {npc_data["health"]}"
                     if "force_scaling" in wave_entry_data:
                         if wave_entry_data["force_scaling"]=="1":
                             extra_info += " _(scaled)_"
