@@ -13,7 +13,9 @@ WIKI_FILES = {
     "items.md": "Items.md",
     "weapon_paps.md": "Weapon_Paps.md",
     "npcs.md": "NPCs.md",
-    "skilltree.md": "Skilltree.md"
+    "skilltree.md": "Skilltree.md",
+    "wiki/sidebar.md": "_Sidebar.md",
+    "wiki/home.md": "Home.md",
 }
 BUILTIN_IMG = "https://raw.githubusercontent.com/squarebracket-s/tf2_zr_wikigen/refs/heads/main/builtin_img/"
 ICON_DOWNLOAD = util.md_img(BUILTIN_IMG+"download.svg", "download")
