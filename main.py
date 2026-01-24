@@ -15,6 +15,10 @@ WIKI_FILES = {
     "npcs.md": "NPCs.md",
     "skilltree.md": "Skilltree.md"
 }
+BUILTIN_IMG = "https://raw.githubusercontent.com/squarebracket-s/tf2_zr_wikigen/refs/heads/main/builtin_img/"
+ICON_LINK = util.md_img(BUILTIN_IMG+"external-link.svg", "external-link")
+ICON_X_SQUARE = util.md_img(BUILTIN_IMG+"x-square.svg","cross")
+ICON_MUSIC = util.md_img(BUILTIN_IMG+"music.svg","music")
 
 def read(filename):
     try:
@@ -208,15 +212,36 @@ def compile_waveset_npc():
                 try:
                     int(wave) # Check if key can be converted to a number to detect wave notation
                 except ValueError:
+                    if wave.startswith("music_"):
+                        music_case = wave.split("_")[1].capitalize()
+                        music = f"{WAVESET_DATA[wave]["name"]} by {WAVESET_DATA[wave]["author"]}"
+                        MARKDOWN_WAVESETS += f"{ICON_MUSIC} **{music_case}:** {music}  \n"
                     continue
                 MARKDOWN_WAVESETS += f"## {wave}  \n"
                 wave_data = WAVESET_DATA[wave]
                 for wave_entry in wave_data:
+                    wave_entry_data = wave_data[wave_entry]
                     try:
                         float(wave_entry)
                     except ValueError:
+                        if wave_entry.startswith("music_"):
+                            icon = util.md_img(BUILTIN_IMG+"music.svg","M2")
+                            if type(wave_entry_data) == type(""):
+                                mfilename = wave_entry_data.replace("#","")
+                                music = mfilename
+                                try: int(wave_entry_data); continue # skip if not actual music entry e.g. "music_outro_duration"	"65"
+                                except ValueError: pass
+                            else:
+                                name = wave_entry_data["file"].replace("#","")
+                                if "name" in wave_entry_data: name = wave_entry_data["name"]
+                                if "author" in wave_entry_data: author = f"by {wave_entry_data["author"]}"
+                                else: author = ""
+                                music = f"{name} {author}"
+                                mfilename = wave_entry_data["file"].replace("#","")
+                            file = f"[{ICON_LINK}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
+                            if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
+                            MARKDOWN_WAVESETS += f"{ICON_MUSIC} {music.replace("_","\\_")} {file}  \n"
                         continue
-                    wave_entry_data = wave_data[wave_entry]
                     count = "1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
                     npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
                     extra_info = ""
@@ -239,17 +264,17 @@ def compile_waveset_npc():
                             if not os.path.isfile(npc_png_icon_path):
                                 npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
                                 npc_icon.save(npc_png_icon_path)
-                            image = f'<img src="{npc_png_icon_path}" alt="A" width="16"/>'
+                            image = util.md_img(npc_png_icon_path,"A")
                         elif os.path.isfile(raw_npc_icon_path):
                             if not os.path.isfile(npc_png_icon_path): # Local testing has persistent env
                                 os.rename(raw_npc_icon_path, npc_png_icon_path)
-                            image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
+                            image = util.md_img(npc_png_icon_path,"C")
                         elif os.path.isfile(npc_png_icon_path): # Local testing has persistent env
-                            image = f'<img src="{npc_png_icon_path}" alt="B" width="16"/>'
+                            image = util.md_img(npc_png_icon_path,"D")
                         else:
-                            image = f'<img src="./builtin_img/missing.png" alt="C" width="16"/>'
+                            image = util.md_img("./builtin_img/missing.png","E")
                     else:
-                        image = f'<img src="./builtin_img/missing.png" alt="D" width="16"/>'
+                        image = util.md_img("./builtin_img/missing.png","F")
                     if npc_data["category"] != "Type_Hidden":
                         MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}) {extra_info}  \n"
                         if wave_entry_data["plugin"] not in added_npc_ids:

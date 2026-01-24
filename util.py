@@ -14,3 +14,6 @@ def to_section_link(str_, pre_h=False):
     for r in remove:
         str_ = str_.replace(r,"")
     return f"{"-"*int(pre_h)}{str_.lower().replace(" ","-")}"
+
+def md_img(url, alt, width=16):
+    return f'<img src="{url}" alt="{alt}" width="{width}"/>'
