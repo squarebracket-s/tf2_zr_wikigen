@@ -14,3 +14,5 @@ Progress:
   - [x] Items
   - [x] Weapon Paps
 - [x] Skill tree data
+  
+Icon source: https://github.com/feathericons/feather
