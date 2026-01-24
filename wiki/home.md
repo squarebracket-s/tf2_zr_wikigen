@@ -1,10 +1,10 @@
  **General**
- - [Items](Items.md)
- - [Weapon Enhancements](Weapon_Paps.md)
- - [NPC List](NPCs.md)
- - [Skilltree](Skilltree.md)
+ - [Items](Items)
+ - [Weapon Enhancements](Weapon_Paps)
+ - [NPC List](NPCs)
+ - [Skilltree](Skilltree)
   
  **Server Configs**
- - [Classic](Wavesets-Classic.md)
- - [Fastmode](Wavesets-Fastmode.md)
- - [redsun.tf Fastmode](Wavesets-Fastmode-Redsun.md)
+ - [Classic](Wavesets-Classic)
+ - [Fastmode](Wavesets-Fastmode)
+ - [redsun.tf Fastmode](Wavesets-Fastmode-Redsun)
