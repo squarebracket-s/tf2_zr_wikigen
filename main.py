@@ -28,6 +28,15 @@ BUILTIN_IMG = "https://raw.githubusercontent.com/squarebracket-s/tf2_zr_wikigen/
 ICON_DOWNLOAD = util.md_img(BUILTIN_IMG+"download.svg", "download")
 ICON_X_SQUARE = util.md_img(BUILTIN_IMG+"x-square.svg","cross")
 ICON_MUSIC = util.md_img(BUILTIN_IMG+"music.svg","music")
+FLAG_MAPPINGS = {
+    "MVM_CLASS_FLAG_NONE": "",
+    "MVM_CLASS_FLAG_NORMAL": "Normal",
+    "MVM_CLASS_FLAG_SUPPORT": "Support",
+    "MVM_CLASS_FLAG_MISSION": "<mark>Support</mark>",
+    "MVM_CLASS_FLAG_MINIBOSS": "Miniboss",
+    "MVM_CLASS_FLAG_ALWAYSCRIT": "Crits",
+    "MVM_CLASS_FLAG_SUPPORT_LIMITED": "Limited Support",
+}
 
 def read(filename):
     try:
@@ -71,6 +80,9 @@ def compile_waveset_npc():
 
                 category = file_data.split("	data.Category = ")
                 category = [item.split(";")[0] for i,item in enumerate(category) if i > 0]
+
+                flags = file_data.split("	data.Flags = ")
+                flags = [item.split(";")[0].split("|") for i,item in enumerate(flags) if i > 0]
 
                 base_path = path.replace(path.split("/")[-1],"") # remove deepest item
                 health = []
@@ -148,6 +160,12 @@ def compile_waveset_npc():
                     category = file_data.split("	data.Category = ")[1].split(";")[0]
                 except IndexError:
                     category = ""
+                
+                try:
+                    flags = file_data.split("	data.Flags = ")[1]
+                    flags = flags.split(";")[0].split("|")
+                except IndexError:
+                    flags = []
 
             # Get icon
             try:
@@ -163,7 +181,18 @@ def compile_waveset_npc():
                 description = PHRASES_NPC_2[desc_key]["en"].replace("\\n","  \n")
             else:
                 description = ""
-            return True, {"name": name, "category": category,"description": description, "plugin": plugin, "icon": icon, "health": health}
+            
+            npc_obj = {
+                "name": name,
+                "category": category,
+                "description": description, 
+                "plugin": plugin, 
+                "icon": icon, 
+                "health": health, 
+                "flags": flags
+            }
+
+            return True, npc_obj
         return False, None
 
     def parse_all_npcs():
@@ -179,6 +208,7 @@ def compile_waveset_npc():
                             pn_data["health"] = pn_data["health"][min(len(pn_data["health"])-1,i)]
                             pn_data["category"] = pn_data["category"][min(len(pn_data["category"])-1,i)]
                             pn_data["plugin"] = pn_data["plugin"][min(len(pn_data["plugin"])-1,i)]
+                            pn_data["flags"] = pn_data["flags"][min(len(pn_data["flags"])-1,i)]
                             npc_by_file[pn] = pn_data
                     else:                    
                         npc_by_file[plugin_name] = data
@@ -270,7 +300,7 @@ def compile_waveset_npc():
                             if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
                             MARKDOWN_WAVESETS += f"{ICON_MUSIC} {music.replace("_","\\_")} {file}  \n"
                         continue
-                    count = "1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
+                    count = "always 1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
                     npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
 
                     npc_name = npc_data["name"]
@@ -308,11 +338,15 @@ def compile_waveset_npc():
                         else:
                             extra_info += f" {npc_data["health"]}"
                     
-
+                    # Show NPC Flags
+                    for flag in npc_data["flags"]:
+                        if flag != "0" and flag != "-1":
+                            extra_info += f" {FLAG_MAPPINGS[flag]}"
+                    
                     # Show if NPC is scaled
                     if "force_scaling" in wave_entry_data:
                         if wave_entry_data["force_scaling"]=="1":
-                            extra_info += " _(scaled)_"
+                            extra_info += " _(forcibly scaled)_"
                     
 
                     # Get icon
@@ -352,7 +386,13 @@ def compile_waveset_npc():
                             else:
                                 npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
                             npc_cat = f"Category: {npc_data["category"]}  \n" if npc_data["category"] != "" else ""
-                            md_npc += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_cat}{npc_data["description"]}  \n"
+                            if "0" not in npc_data["flags"] and "-1" not in npc_data["flags"]:
+                                npc_flags = "Flags: "
+                                dflags = ", ".join([FLAG_MAPPINGS[item] for item in npc_data["flags"]])
+                                npc_flags += dflags + "  \n"
+                            else:
+                                npc_flags = ""
+                            md_npc += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_flags}{npc_cat}{npc_data["description"]}  \n"
                     else:
                         MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
             
