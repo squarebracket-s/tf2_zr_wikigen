@@ -370,6 +370,7 @@ def compile_waveset_npc():
                         if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
                         MARKDOWN_WAVESETS += f"{ICON_MUSIC} **{music_case}:** {music} {file}  \n"
                     continue
+                if len(wave_data)==0: continue
                 MARKDOWN_WAVESETS += f"## {wave}  \n"
                 for wave_entry in wave_data:
                     wave_entry_data = wave_data[wave_entry]
@@ -499,7 +500,7 @@ def compile_waveset_npc():
                 MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
 
         if map_mode:
-            filename = cfg.split("/")[-1].replace(".cfg","") + ".md"
+            filename = cfg.split("/")[-1].replace(".cfg","")
             display_name = filename
         else:
             filename = f"wavesets_{cfg}.md".replace("/","_")
