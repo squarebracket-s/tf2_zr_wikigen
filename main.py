@@ -324,7 +324,7 @@ def compile_waveset_npc():
                 MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
         else:
             n = cfg.split("/")[-1].replace(".cfg","")
-            md_mapsets += f"- [{n}]({n}.md)  \n"
+            md_mapsets += f"- [{n}]({n})  \n"
         
         if "Modifiers" in WAVESET_LIST:
             MARKDOWN_WAVESETS += f"# Modifiers  \n"
@@ -508,8 +508,8 @@ def compile_waveset_npc():
                 MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
 
         if map_mode:
-            display_name = cfg.split("/")[-1].replace(".cfg","")
-            filename = display_name + ".md"
+            filename = cfg.split("/")[-1].replace(".cfg","") + ".md"
+            display_name = filename
         else:
             filename = f"wavesets_{cfg}.md".replace("/","_")
             disp = cfg.replace(".cfg","").replace("_"," ").replace("/"," ")
