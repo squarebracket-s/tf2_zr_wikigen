@@ -369,8 +369,13 @@ def compile_waveset_npc():
                     int(wave) # Check if key can be converted to a number to detect wave notation
                 except ValueError:
                     if wave.startswith("music_"):
+                        wave_data = defaultdict(str,wave_data)
                         music_case = wave.split("_")[1].capitalize()
-                        music = f"{wave_data["name"]} by {wave_data["author"]}"
+                        name = wave_data["file"].replace("#","")
+                        if wave_data["name"] != "": name = wave_data["name"]
+                        if wave_data["author"] != "": author = f"by {wave_data["author"]}"
+                        else: author = ""
+                        music = f"{name} {author}"
                         mfilename = wave_data["file"].replace("#","")
                         if mfilename == "vo/null.mp3": continue
                         file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
