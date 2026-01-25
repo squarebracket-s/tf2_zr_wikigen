@@ -17,15 +17,9 @@ WIKI_FILES = {
     "weapon_paps.md": "Weapon_Paps.md",
     "npcs.md": "NPCs.md",
     "skilltree.md": "Skilltree.md",
+    "sidebar.md": "_Sidebar.md",
+    "home.md": "Home.md"
 }
-
-if "ACTION" in os.environ:
-    try:
-        if bool(os.environ["ACTION"]):     
-            WIKI_FILES["wiki/sidebar.md"] = "_Sidebar.md"
-            WIKI_FILES["wiki/home.md"] = "Home.md"
-    except ValueError:
-        util.log("ACTION env couldn't be converted to bool!","WARNING")
 
 BUILTIN_IMG = "https://raw.githubusercontent.com/squarebracket-s/tf2_zr_wikigen/refs/heads/main/builtin_img/"
 ICON_DOWNLOAD = util.md_img(BUILTIN_IMG+"download.svg", "download")
@@ -303,15 +297,17 @@ def compile_waveset_npc():
         return w
     
 
-    def parse_waveset_list_cfg(cfg, md_npc):
-        util.log(f"Parsing waveset list cfg: {cfg}")
+    def parse_waveset_list_cfg(cfg, md_npc, md_mapsets):
         WAVESET_LIST = KeyValues1.parse(util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{cfg}"))
-        if "Custom" in WAVESET_LIST: # map-specific waveset list config
-            WAVESET_LIST = WAVESET_LIST["Custom"]
         
-        if "Setup" not in WAVESET_LIST: # Unsupported waveset cfg (Rogue, Bunker, etc.)
+        if "Setup" not in WAVESET_LIST and "Custom" not in WAVESET_LIST: # Unsupported waveset cfg (Rogue, Bunker, etc.)
             util.log(f"Unsupported waveset cfg {cfg}!","WARNING")
-            return md_npc
+            return md_npc, md_mapsets
+        util.log(f"Parsing waveset list cfg: {cfg}")
+
+        map_mode = "Custom" in WAVESET_LIST
+        if map_mode: # map-specific waveset list config
+            WAVESET_LIST = WAVESET_LIST["Custom"]
         
         WAVESET_LIST = WAVESET_LIST["Setup"]
 
@@ -321,9 +317,13 @@ def compile_waveset_npc():
         else: # Assume data being in the cfg file itself. See: maps/zr_bossrush.cfg
             waves = WAVESET_LIST
 
-        MARKDOWN_WAVESETS = f"Starting cash: ${WAVESET_LIST["cash"]}  \n# Wavesets  \n"
-        for waveset_name in waves:
-            MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
+        MARKDOWN_WAVESETS = f"Starting cash: ${WAVESET_LIST["cash"]}  \n{"# Wavesets"*int(not map_mode)}  \n"
+        if not map_mode:
+            for waveset_name in waves:
+                MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
+        else:
+            n = cfg.split("/")[-1].replace(".cfg","")
+            md_mapsets += f"- [{n}]({n}.md)  \n"
         
         if "Modifiers" in WAVESET_LIST:
             MARKDOWN_WAVESETS += f"# Modifiers  \n"
@@ -365,6 +365,7 @@ def compile_waveset_npc():
                         music_case = wave.split("_")[1].capitalize()
                         music = f"{wave_data["name"]} by {wave_data["author"]}"
                         mfilename = wave_data["file"].replace("#","")
+                        if mfilename == "vo/null.mp3": continue
                         file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
                         if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
                         MARKDOWN_WAVESETS += f"{ICON_MUSIC} **{music_case}:** {music} {file}  \n"
@@ -497,18 +498,23 @@ def compile_waveset_npc():
                 desc = PHRASES_NPC_2[data["desc"]]["en"].replace("\\n","  \n")
                 MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
 
-        filename = f"wavesets_{cfg}.md".replace("/","_")
-        disp = cfg.replace(".cfg","").replace("_"," ").replace("/"," ")
-        disp_title = disp.replace("'","~").title().replace("~","'") # https://stackoverflow.com/a/1549644
-        display_name = f"{disp_title}.md"
+        if map_mode:
+            filename = cfg.split("/")[-1].replace(".cfg","") + ".md"
+            display_name = filename
+        else:
+            filename = f"wavesets_{cfg}.md".replace("/","_")
+            disp = cfg.replace(".cfg","").replace("_"," ").replace("/"," ")
+            disp_title = disp.replace("'","~").title().replace("~","'") # https://stackoverflow.com/a/1549644
+            display_name = f"{disp_title}.md"
         WIKI_FILES[filename] = display_name
         util.write(filename, MARKDOWN_WAVESETS)
-        return md_npc
+        return md_npc, md_mapsets
 
     # TODO: Map-specific wavesets such as Matrix (stored in addons/sourcemod/zombie_riot/config/maps/)
     # NPC list is global to prevent duplicates
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
     MARKDOWN_NPCS = ""
+    MARKDOWN_MAPSETS = "\n**Map-specific wavesets**  \n"
     added_npc_ids = []
 
     if not os.path.isdir("repo_img"): os.system("mkdir repo_img")
@@ -530,9 +536,11 @@ def compile_waveset_npc():
             cfg_files.append(f"maps/{file}")
 
     for f in cfg_files:
-        MARKDOWN_NPCS = parse_waveset_list_cfg(f, MARKDOWN_NPCS)
+        MARKDOWN_NPCS, MARKDOWN_MAPSETS = parse_waveset_list_cfg(f, MARKDOWN_NPCS, MARKDOWN_MAPSETS)
 
     util.write("npcs.md", MARKDOWN_NPCS)
+    util.write("sidebar.md", util.read("wiki/sidebar.md")+MARKDOWN_MAPSETS)
+    util.write("home.md", util.read("wiki/home.md")+MARKDOWN_MAPSETS)
 
 ## COMPILE WEAPON CFG -------------------------------------------------------------------------------------------------
 
