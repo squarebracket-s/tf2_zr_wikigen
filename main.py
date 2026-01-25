@@ -352,7 +352,7 @@ def compile_waveset_npc():
                         desc = waveset_desc_key
                 else:
                     desc = ""
-                MARKDOWN_WAVESETS += f"# {waveset_name}  \n[Back to top](#wavesets)  \n{desc}  \n"
+                MARKDOWN_WAVESETS += f"# {waveset_name}  \n{"[Back to top](#wavesets)  \n" * int(not map_mode)}{desc}  \n"
             else:
                 self_destruct = True
                 WAVESET_DATA = wavesets
