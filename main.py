@@ -14,9 +14,16 @@ WIKI_FILES = {
     "weapon_paps.md": "Weapon_Paps.md",
     "npcs.md": "NPCs.md",
     "skilltree.md": "Skilltree.md",
-    "wiki/sidebar.md": "_Sidebar.md",
-    "wiki/home.md": "Home.md",
 }
+
+if "ACTION" in os.environ:
+    try:
+        if bool(os.environ["ACTION"]):     
+            WIKI_FILES["wiki/sidebar.md"] = "_Sidebar.md"
+            WIKI_FILES["wiki/home.md"] = "Home.md"
+    except ValueError:
+        util.log("ACTION env couldn't be converted to bool!","WARNING")
+
 BUILTIN_IMG = "https://raw.githubusercontent.com/squarebracket-s/tf2_zr_wikigen/refs/heads/main/builtin_img/"
 ICON_DOWNLOAD = util.md_img(BUILTIN_IMG+"download.svg", "download")
 ICON_X_SQUARE = util.md_img(BUILTIN_IMG+"x-square.svg","cross")
@@ -81,12 +88,30 @@ def compile_waveset_npc():
                         h = "?"
                     health.append(h)
             else:
-                # TODO: Handle cases e.g. carrier?4500:(elite?5000:4000)HP, data[0]?3750:3000HP, elite?7200:5700HP
+                def parse_health_number(num):
+                    try:
+                        float(num)
+                        return num
+                    except ValueError:
+                        # Assume variable
+                        npc_vars = file_data.split("#define ")
+                        npc_vars_dict = {}
+                        for i, item in enumerate(npc_vars):
+                            if i > 0:
+                                # May parse whole blocks of code as key&value pairs sometimes, but it gets the job done. Doesn't break actual variables in any way
+                                full_str = item.split('"')
+                                k, v = util.normalize_whitespace(full_str[0]).replace(" ",""), full_str[1].replace(" ","")
+                                npc_vars_dict[k] = v
+
+                        if num in npc_vars_dict:
+                            util.debug(f"[X] {path} var {num}")
+                            return npc_vars_dict[num]
+                        else:
+                            util.debug(f"[ ] {path} var {num}")
+                            return "dynamic"
                 try:
                     health = file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
-                    if health == "GetBuildingHealth()" or health == "health":
-                        health = "dynamic building health"
-                    elif "MinibossHealthScaling" in health:
+                    if "MinibossHealthScaling" in health:
                         health = f"Miniboss health scaling (Base {health.split("(")[1][:-1]}HP)"
                     elif ":" in health:
                         """
@@ -102,18 +127,19 @@ def compile_waveset_npc():
                                 if k.startswith("data"): k="any"
                             else:
                                 k,v = "default", c
+                            v=v.replace(")","")
                             return k,v
                         for case in cases:
                             if ":" in case:
                                 subcases = case.split(":")
                                 for subcase in subcases:
                                     k,v = parse_case(subcase)
-                                    health[k] = v
+                                    health[k] = parse_health_number(v)
                             else:
                                 k,v = parse_case(case)
-                                health[k] = v
+                                health[k] = parse_health_number(v)
                     else:
-                        health = health + "HP"
+                        health = parse_health_number(health) + "HP"
                 except IndexError:
                     health = "?"
                 plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")[1].split("\");")[0]
@@ -147,7 +173,7 @@ def compile_waveset_npc():
                 add, data = extract_npc_data(str(file.absolute()))
                 if add:
                     plugin_name = data["plugin"]
-                    if type(plugin_name) == type([]):
+                    if type(plugin_name) == list:
                         for i,pn in enumerate(plugin_name):
                             pn_data = data.copy()
                             pn_data["health"] = pn_data["health"][min(len(pn_data["health"])-1,i)]
@@ -163,7 +189,7 @@ def compile_waveset_npc():
                     import json
                     write("npc_data.json",json.dumps(npc_by_file,indent=2))
             except ValueError:
-                print("DEBUG env couldn't be converted to bool!")
+                util.log("DEBUG env couldn't be converted to bool!","WARNING")
         return npc_by_file
     
 
@@ -181,7 +207,7 @@ def compile_waveset_npc():
     
 
     def parse_waveset_list_cfg(cfg, md_npc):
-        print(f"Parsing waveset list cfg: {cfg}")
+        util.log(f"Parsing waveset list cfg: {cfg}")
         WAVESET_LIST = KeyValues1.parse(read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{cfg}"))
         if "Custom" in WAVESET_LIST: # map-specific waveset list config
             WAVESET_LIST = WAVESET_LIST["Custom"]
@@ -197,7 +223,7 @@ def compile_waveset_npc():
         
         for waveset_name in WAVESET_LIST["Waves"]:
             waveset_file = WAVESET_LIST["Waves"][waveset_name]["file"]
-            print(f"    {waveset_name}{" "*(25-len(waveset_name))}| {waveset_file}")
+            util.log(f"    {waveset_name}{" "*(25-len(waveset_name))}| {waveset_file}")
             wave_cfg = read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{waveset_file}.cfg")
             # Waveset-specific typo fixes (or just removing lines that break the parser)
             if waveset_file == "classic_iber&expi": wave_cfg=wave_cfg.replace('			"plugin"	"110000000"',"") # overrides actual plugin name before it, which is why it has to be removed
@@ -228,7 +254,7 @@ def compile_waveset_npc():
                     except ValueError:
                         if wave_entry.startswith("music_"):
                             icon = util.md_img(BUILTIN_IMG+"music.svg","M2")
-                            if type(wave_entry_data) == type(""):
+                            if type(wave_entry_data) == str:
                                 mfilename = wave_entry_data.replace("#","")
                                 music = mfilename
                                 try: int(wave_entry_data); continue # skip if not actual music entry e.g. "music_outro_duration"	"65"
@@ -246,25 +272,50 @@ def compile_waveset_npc():
                         continue
                     count = "1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
                     npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
+
+                    npc_name = npc_data["name"]
+                    npc_name_prefix = ""
+
+                    # Health data
+                    """
+                    bool carrier = data[0] == 'R';
+                    bool elite = !carrier && data[0];
+                    """
                     extra_info = ""
                     if "health" in wave_entry_data:
                         extra_info += f" {wave_entry_data["health"]}HP"
                     else:
-                        if type(npc_data["health"]) == type({}):
+                        if type(npc_data["health"]) == dict:
                             if "data" in wave_entry_data:
                                 data_key = wave_entry_data["data"]
-                                if data_key.lower() in npc_data["health"]: h = f" Type: {data_key} {npc_data["health"][data_key.lower()]}"
-                                elif "any" in npc_data["health"]: h = f" Type: {data_key} {npc_data["health"]["any"]}"
-                                else: h = npc_data["health"]["default"]
+                                # vars
+                                carrier = data_key[0] == "R"
+                                elite = (not carrier) and data_key[0] # If first char isn't R but data exists
+
+                                if carrier: data_key = "carrier"
+                                elif elite: data_key = "elite"
+                                else: data_key = "default";npc_name_prefix="!c"
+
+                                if data_key not in npc_data["health"] and "any" in npc_data["health"]: data_key = "any";
+                                elif data_key not in npc_data["health"]: data_key = "default";
+
+                                npc_name_prefix += wave_entry_data["data"].capitalize()
+                                util.debug(f"Parsing HP Value{npc_data["health"]} DATA value {wave_entry_data["data"]} CHOSEN value {data_key}")
+                                h = f" {npc_data["health"][data_key.lower()]}"
                             else:
                                 h = npc_data["health"]["default"]
                             extra_info += f" {h}HP"
                         else:
                             extra_info += f" {npc_data["health"]}"
+                    
+
+                    # Show if NPC is scaled
                     if "force_scaling" in wave_entry_data:
                         if wave_entry_data["force_scaling"]=="1":
                             extra_info += " _(scaled)_"
-                    npc_name = npc_data["name"]
+                    
+
+                    # Get icon
                     if npc_data["icon"]!="":
                         npc_icon_key = "leaderboard_class_"+npc_data["icon"]+".vtf"
                         npc_png_icon_path = f"repo_img/{npc_data["icon"]}.png"
@@ -287,11 +338,19 @@ def compile_waveset_npc():
                             image = util.md_img("./builtin_img/missing.png","E")
                     else:
                         image = util.md_img("./builtin_img/missing.png","F")
+
+                    # Add NPC to wave data                
                     if npc_data["category"] != "Type_Hidden":
-                        MARKDOWN_WAVESETS += f"{count} {image} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}) {extra_info}  \n"
+                        MARKDOWN_WAVESETS += f"{count} {image} {npc_name_prefix} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}) {extra_info}  \n"
+                        # Add NPC if not hidden & doesn't exist already
                         if wave_entry_data["plugin"] not in added_npc_ids:
                             added_npc_ids.append(wave_entry_data["plugin"])
-                            npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
+                            if type(npc_data["health"]) == dict:
+                                npc_health = ""
+                                for k,v in npc_data["health"].items():
+                                    npc_health += f"{k.capitalize()}: {v}HP"
+                            else:
+                                npc_health = f"Default health: {npc_data["health"]}  \n" if npc_data["health"] != "" else ""
                             npc_cat = f"Category: {npc_data["category"]}  \n" if npc_data["category"] != "" else ""
                             md_npc += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_cat}{npc_data["description"]}  \n"
                     else:
@@ -321,7 +380,7 @@ def compile_waveset_npc():
     PHRASES_NPC_2 = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.item.gift.desc.txt"))["Phrases"]
     PHRASES_WAVESET = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.txt"))["Phrases"]
 
-    print("Parsing NPCs...")
+    util.log("Parsing NPCs...")
     NPCS_BY_FILENAME = parse_all_npcs()
 
     cfg_files = [
@@ -337,7 +396,7 @@ def compile_waveset_npc():
 ## COMPILE WEAPON CFG -------------------------------------------------------------------------------------------------
 
 def compile_weapon():
-    print("Compiling Weapon List...")
+    util.log("Compiling Weapon List...")
     MARKDOWN_WEAPON = ""
     MARKDOWN_WEAPON_PAP = ""
     tags = []
@@ -501,7 +560,7 @@ def compile_weapon():
 ## COMPILE SKILLTREE CFG -------------------------------------------------------------------------------------------------
 
 def compile_skilltree():
-    print("Compiling Skilltree...")
+    util.log("Compiling Skilltree...")
     """
     	"name"		"Luck Up 1"	// Name
         "player"	"SkillPlayer_LuckUp"	// Function
@@ -556,4 +615,4 @@ if os.path.isdir("tf2_zr_wikigen.wiki/"):
         if os.path.isfile(file):
             os.rename(file, f"tf2_zr_wikigen.wiki/{WIKI_FILES[file]}")
         else:
-            print(f"Missing file {file}: cannot move into wiki")
+            util.log(f"Missing file {file}: cannot move into wiki","WARNING")

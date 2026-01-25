@@ -28,7 +28,7 @@ jobs:
         rm -r ./tf2_zr_wikigen.wiki/*.md
 
     - name: Parse ZR repo code
-      run: ./venv/bin/python main.py
+      run: ACTION=1 ./venv/bin/python main.py
     
     - name: Move repo_img and builtin_img to wiki
       run: |
