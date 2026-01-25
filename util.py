@@ -28,8 +28,8 @@ def md_img(url, alt, width=16):
 def normalize_whitespace(str_):
     return " ".join(str_.split())
 
-def debug(str_):
-    if DEBUG: log(str_)
+def debug(str_,color="OKGREEN"):
+    if DEBUG: log(str_,color)
 
 # Logging
 bcolors = {
@@ -63,3 +63,17 @@ def log(message, color="OKGREEN"):
     if color == "FAIL": pre="[ERR] "
     if "OK" in color: pre="[LOG] "
     print(bcolors[color] + time + pre + message + bcolors["ENDC"])
+
+
+def read(filename):
+    try:
+        with open(filename, 'r') as f:
+            return f.read()
+    except FileNotFoundError:
+        return None
+
+
+def write(filename, val):
+    with open(filename, 'w+') as f:
+        f.write(str(val))
+    return True

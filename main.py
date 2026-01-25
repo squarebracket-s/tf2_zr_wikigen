@@ -4,6 +4,9 @@ from keyvalues1 import KeyValues1
 import vtf2img
 import re
 
+# https://stackoverflow.com/questions/2082152/how-to-make-a-case-insensitive-dictionary
+from requests.structures import CaseInsensitiveDict
+
 import util
 
 # Utility functions
@@ -38,19 +41,6 @@ FLAG_MAPPINGS = {
     "MVM_CLASS_FLAG_SUPPORT_LIMITED": "Limited Support",
 }
 
-def read(filename):
-    try:
-        with open(filename, 'r') as f:
-            return f.read()
-    except FileNotFoundError:
-        return None
-
-
-def write(filename, val):
-    with open(filename, 'w+') as f:
-        f.write(str(val))
-    return True
-
 
 ## COMPILE WAVESETS -------------------------------------------------------------------------------------------------
 def remove_multiline_comments(d): # Fixes the script interpreting the comment in npc_headcrabzombie.sp as actual data
@@ -66,7 +56,8 @@ def remove_multiline_comments(d): # Fixes the script interpreting the comment in
 
 def compile_waveset_npc():
     def extract_npc_data(path):
-        file_data = read(path)
+        util.debug(f"Parsing NPC {path}","OKCYAN")
+        file_data = util.read(path)
         file_data = remove_multiline_comments(file_data)
         if ("npc_donoteveruse" not in file_data and "NPC_Add" in file_data):
             # Get name
@@ -74,7 +65,29 @@ def compile_waveset_npc():
             
             # Get plugin and health
             # TODO: Case for non-shared file with multiple NPC_Add calls (-> different npc names) Example: raidmode_bosses/npc_god_alaxios.sp (sea-infected god alaxios isn't present in any redsun cfg!)
+            def parse_health_number(num):
+                try:
+                    float(num)
+                    return num
+                except ValueError:
+                    # Assume variable
+                    npc_vars = file_data.split("#define ")
+                    npc_vars_dict = {}
+                    for i, item in enumerate(npc_vars):
+                        if i > 0:
+                            # May parse whole blocks of code as key&value pairs sometimes, but it gets the job done. Doesn't break actual variables in any way
+                            full_str = item.split('"')
+                            k, v = util.normalize_whitespace(full_str[0]).replace(" ",""), full_str[1].replace(" ","")
+                            npc_vars_dict[k] = v
+
+                    if num in npc_vars_dict:
+                        util.debug(f"[X] {path} var {num}")
+                        return npc_vars_dict[num]
+                    else:
+                        util.debug(f"[ ] {path} var {num}")
+                        return "dynamic"
             if "shared" in path:
+                # Several instances of NPC entry data, several instances of CClotBody in separate files
                 plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")
                 plugin = [item.split("\");")[0] for i,item in enumerate(plugin) if i > 0]
 
@@ -87,40 +100,90 @@ def compile_waveset_npc():
                 base_path = path.replace(path.split("/")[-1],"") # remove deepest item
                 health = []
                 for i,p in enumerate(plugin):
-                    p_data = read(base_path+p+".sp")
+                    p_data = util.read(base_path+p+".sp")
                     try:
-                        h = p_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
-                        if h == "GetBuildingHealth()" or h == "health":
-                            h = "[dynamic]"
-                        elif "MinibossHealthScaling" in h:
-                            h = f"dynamically scaled (Base {h.split("(")[1][:-1]}HP)"
+                        health = file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
+                        if "MinibossHealthScaling" in health:
+                            health = f"Miniboss health scaling (Base {health.split("(")[1][:-1]}HP)"
+                        elif ":" in health:
+                            """
+                            extra "data" fields for enemies (lists, numbers or types like "Elite")
+                            'data[0]?x' is probably checking if any value from the waveset cfg exists at all to use x? 
+                            """
+                            cases = health.split(":(")
+                            if len(cases) == 0: cases = health.split(":")
+                            health = {}
+                            def parse_case(c):
+                                if "?" in c:
+                                    k,v = c.split("?")
+                                    if k.startswith("data"): k="any"
+                                else:
+                                    k,v = "default", c
+                                v=v.replace(")","")
+                                return k,v
+                            for case in cases:
+                                if ":" in case:
+                                    subcases = case.split(":")
+                                    for subcase in subcases:
+                                        k,v = parse_case(subcase)
+                                        health[k] = parse_health_number(v)
+                                else:
+                                    k,v = parse_case(case)
+                                    health[k] = parse_health_number(v)
                         else:
-                            h = h + "HP"
+                            health = parse_health_number(health) + "HP"
                     except IndexError:
                         h = "?"
                     health.append(h)
-            else:
-                def parse_health_number(num):
-                    try:
-                        float(num)
-                        return num
-                    except ValueError:
-                        # Assume variable
-                        npc_vars = file_data.split("#define ")
-                        npc_vars_dict = {}
-                        for i, item in enumerate(npc_vars):
-                            if i > 0:
-                                # May parse whole blocks of code as key&value pairs sometimes, but it gets the job done. Doesn't break actual variables in any way
-                                full_str = item.split('"')
-                                k, v = util.normalize_whitespace(full_str[0]).replace(" ",""), full_str[1].replace(" ","")
-                                npc_vars_dict[k] = v
+                
+                filetype = "shared"
+            if file_data.count("NPC_Add") > 1:
+                # Several instances of NPC entry data, one instance of CClotBody
+                plugin = file_data.split("	strcopy(data.Plugin, sizeof(data.Plugin), \"")
+                plugin = [item.split("\");")[0] for i,item in enumerate(plugin) if i > 0]
 
-                        if num in npc_vars_dict:
-                            util.debug(f"[X] {path} var {num}")
-                            return npc_vars_dict[num]
-                        else:
-                            util.debug(f"[ ] {path} var {num}")
-                            return "dynamic"
+                category = file_data.split("	data.Category = ")
+                category = [item.split(";")[0] for i,item in enumerate(category) if i > 0]
+
+                flags = file_data.split("	data.Flags = ")
+                flags = [item.split(";")[0].split("|") for i,item in enumerate(flags) if i > 0]
+            
+                try:
+                    health = file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
+                    if "MinibossHealthScaling" in health:
+                        health = f"Miniboss health scaling (Base {health.split("(")[1][:-1]}HP)"
+                    elif ":" in health:
+                        """
+                        extra "data" fields for enemies (lists, numbers or types like "Elite")
+                        'data[0]?x' is probably checking if any value from the waveset cfg exists at all to use x? 
+                        """
+                        cases = health.split(":(")
+                        if len(cases) == 0: cases = health.split(":")
+                        health = {}
+                        def parse_case(c):
+                            if "?" in c:
+                                k,v = c.split("?")
+                                if k.startswith("data"): k="any"
+                            else:
+                                k,v = "default", c
+                            v=v.replace(")","")
+                            return k,v
+                        for case in cases:
+                            if ":" in case:
+                                subcases = case.split(":")
+                                for subcase in subcases:
+                                    k,v = parse_case(subcase)
+                                    health[k] = parse_health_number(v)
+                            else:
+                                k,v = parse_case(case)
+                                health[k] = parse_health_number(v)
+                    else:
+                        health = parse_health_number(health) + "HP"
+                except IndexError:
+                    health = "?"
+                filetype = "multi"
+            else:
+                # One instance of everything
                 try:
                     health = file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
                     if "MinibossHealthScaling" in health:
@@ -166,6 +229,8 @@ def compile_waveset_npc():
                     flags = flags.split(";")[0].split("|")
                 except IndexError:
                     flags = []
+                
+                filetype = "single"
 
             # Get icon
             try:
@@ -189,7 +254,8 @@ def compile_waveset_npc():
                 "plugin": plugin, 
                 "icon": icon, 
                 "health": health, 
-                "flags": flags
+                "flags": flags,
+                "filetype": filetype
             }
 
             return True, npc_obj
@@ -205,7 +271,8 @@ def compile_waveset_npc():
                     if type(plugin_name) == list:
                         for i,pn in enumerate(plugin_name):
                             pn_data = data.copy()
-                            pn_data["health"] = pn_data["health"][min(len(pn_data["health"])-1,i)]
+                            if data["filetype"] == "shared":
+                                pn_data["health"] = pn_data["health"][min(len(pn_data["health"])-1,i)]
                             pn_data["category"] = pn_data["category"][min(len(pn_data["category"])-1,i)]
                             pn_data["plugin"] = pn_data["plugin"][min(len(pn_data["plugin"])-1,i)]
                             pn_data["flags"] = pn_data["flags"][min(len(pn_data["flags"])-1,i)]
@@ -217,7 +284,7 @@ def compile_waveset_npc():
             try:
                 if bool(os.environ["DEBUG"]):
                     import json
-                    write("npc_data.json",json.dumps(npc_by_file,indent=2))
+                    util.write("npc_data.json",json.dumps(npc_by_file,indent=2))
             except ValueError:
                 util.log("DEBUG env couldn't be converted to bool!","WARNING")
         return npc_by_file
@@ -238,30 +305,56 @@ def compile_waveset_npc():
 
     def parse_waveset_list_cfg(cfg, md_npc):
         util.log(f"Parsing waveset list cfg: {cfg}")
-        WAVESET_LIST = KeyValues1.parse(read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{cfg}"))
+        WAVESET_LIST = KeyValues1.parse(util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{cfg}"))
         if "Custom" in WAVESET_LIST: # map-specific waveset list config
             WAVESET_LIST = WAVESET_LIST["Custom"]
+        
+        if "Setup" not in WAVESET_LIST: # Unsupported waveset cfg (Rogue, Bunker, etc.)
+            util.log(f"Unsupported waveset cfg {cfg}!","WARNING")
+            return md_npc
+        
         WAVESET_LIST = WAVESET_LIST["Setup"]
 
+
+        if "Waves" in WAVESET_LIST:
+            waves = WAVESET_LIST["Waves"]
+        else: # Assume data being in the cfg file itself. See: maps/zr_bossrush.cfg
+            waves = WAVESET_LIST
+
         MARKDOWN_WAVESETS = f"Starting cash: ${WAVESET_LIST["cash"]}  \n# Wavesets  \n"
-        for waveset_name in WAVESET_LIST["Waves"]:
+        for waveset_name in waves:
             MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
         
-        MARKDOWN_WAVESETS += f"# Modifiers  \n"
-        for modifiers in WAVESET_LIST["Modifiers"]:
-            MARKDOWN_WAVESETS += f"- [{modifiers}](#{util.to_section_link(modifiers)})  \n"    
+        if "Modifiers" in WAVESET_LIST:
+            MARKDOWN_WAVESETS += f"# Modifiers  \n"
+            for modifiers in WAVESET_LIST["Modifiers"]:
+                MARKDOWN_WAVESETS += f"- [{modifiers}](#{util.to_section_link(modifiers)})  \n"    
         
-        for waveset_name in WAVESET_LIST["Waves"]:
-            waveset_file = WAVESET_LIST["Waves"][waveset_name]["file"]
-            util.log(f"    {waveset_name}{" "*(25-len(waveset_name))}| {waveset_file}")
-            wave_cfg = read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{waveset_file}.cfg")
-            # Waveset-specific typo fixes (or just removing lines that break the parser)
-            if waveset_file == "classic_iber&expi": wave_cfg=wave_cfg.replace('			"plugin"	"110000000"',"") # overrides actual plugin name before it, which is why it has to be removed
-            wave_cfg = unique_enemy_delays(wave_cfg)
-            WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
+        for waveset_name in waves:
+            self_destruct = False
+            if "file" in waves[waveset_name]:
+                waveset_file = waves[waveset_name]["file"]
+                util.log(f"    {waveset_name}{" "*(35-len(waveset_name))}| {waveset_file}")
+                wave_cfg = util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{waveset_file}.cfg")
+                # Waveset-specific typo fixes (or just removing lines that break the parser)
+                if waveset_file == "classic_iber&expi": wave_cfg=wave_cfg.replace('			"plugin"	"110000000"',"") # overrides actual plugin name before it, which is why it has to be removed
+                wave_cfg = unique_enemy_delays(wave_cfg)
 
-            waveset_desc_key = WAVESET_LIST["Waves"][waveset_name]["desc"]
-            MARKDOWN_WAVESETS += f"# {waveset_name}  \n[Back to top](#wavesets)  \n{PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")}  \n"
+                WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
+
+                if "desc" in waves[waveset_name]:
+                    waveset_desc_key = waves[waveset_name]["desc"]
+                    # Blame artvin PR #895 for not translating a desc
+                    if waveset_desc_key in PHRASES_WAVESET:
+                        desc = PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")
+                    else:
+                        desc = waveset_desc_key
+                else:
+                    desc = ""
+                MARKDOWN_WAVESETS += f"# {waveset_name}  \n[Back to top](#wavesets)  \n{desc}  \n"
+            else:
+                self_destruct = True
+                WAVESET_DATA = waves
             
             for wave in WAVESET_DATA:
                 wave_data = WAVESET_DATA[wave]
@@ -330,7 +423,7 @@ def compile_waveset_npc():
                                 elif data_key not in npc_data["health"]: data_key = "default";
 
                                 npc_name_prefix += wave_entry_data["data"].capitalize()
-                                util.debug(f"Parsing HP Value{npc_data["health"]} DATA value {wave_entry_data["data"]} CHOSEN value {data_key}")
+                                util.debug(f"Parsing HP Value{npc_data["health"]} DATA value {wave_entry_data["data"]} CHOSEN value {data_key}", "OKCYAN")
                                 h = f" {npc_data["health"][data_key.lower()]}"
                             else:
                                 h = npc_data["health"]["default"]
@@ -395,17 +488,21 @@ def compile_waveset_npc():
                             md_npc += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_flags}{npc_cat}{npc_data["description"]}  \n"
                     else:
                         MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
-            
-        for modifier in WAVESET_LIST["Modifiers"]:
-            data = WAVESET_LIST["Modifiers"][modifier]
-            MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{PHRASES_NPC_2[data["desc"]]["en"].replace("\\n","  \n")}  \n"
 
-        filename = f"wavesets_{cfg}.md"
-        disp = cfg.replace(".cfg","").replace("_"," ")
+            if self_destruct: break
+
+        if "Modifiers" in WAVESET_LIST:
+            for modifier in WAVESET_LIST["Modifiers"]:
+                data = WAVESET_LIST["Modifiers"][modifier]
+                desc = PHRASES_NPC_2[data["desc"]]["en"].replace("\\n","  \n")
+                MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
+
+        filename = f"wavesets_{cfg}.md".replace("/","_")
+        disp = cfg.replace(".cfg","").replace("_"," ").replace("/"," ")
         disp_title = disp.replace("'","~").title().replace("~","'") # https://stackoverflow.com/a/1549644
-        display_name = f"Wavesets {disp_title}.md"
+        display_name = f"{disp_title}.md"
         WIKI_FILES[filename] = display_name
-        write(filename, MARKDOWN_WAVESETS)
+        util.write(filename, MARKDOWN_WAVESETS)
         return md_npc
 
     # TODO: Map-specific wavesets such as Matrix (stored in addons/sourcemod/zombie_riot/config/maps/)
@@ -416,9 +513,9 @@ def compile_waveset_npc():
 
     if not os.path.isdir("repo_img"): os.system("mkdir repo_img")
 
-    PHRASES_NPC = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.zombienames.txt"))["Phrases"]
-    PHRASES_NPC_2 = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.item.gift.desc.txt"))["Phrases"]
-    PHRASES_WAVESET = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.txt"))["Phrases"]
+    PHRASES_NPC = CaseInsensitiveDict(KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.zombienames.txt"))["Phrases"])
+    PHRASES_NPC_2 = CaseInsensitiveDict(KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.item.gift.desc.txt"))["Phrases"])
+    PHRASES_WAVESET = CaseInsensitiveDict(KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.txt"))["Phrases"])
 
     util.log("Parsing NPCs...")
     NPCS_BY_FILENAME = parse_all_npcs()
@@ -428,10 +525,14 @@ def compile_waveset_npc():
         "fastmode.cfg",
         "fastmode_redsun.cfg", 
     ]
+    for file in os.listdir("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/maps/"):
+        if ".cfg" in file:
+            cfg_files.append(f"maps/{file}")
+
     for f in cfg_files:
         MARKDOWN_NPCS = parse_waveset_list_cfg(f, MARKDOWN_NPCS)
 
-    write("npcs.md", MARKDOWN_NPCS)
+    util.write("npcs.md", MARKDOWN_NPCS)
 
 ## COMPILE WEAPON CFG -------------------------------------------------------------------------------------------------
 
@@ -440,8 +541,8 @@ def compile_weapon():
     MARKDOWN_WEAPON = ""
     MARKDOWN_WEAPON_PAP = ""
     tags = []
-    CFG_WEAPONS = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
-    PHRASES_WEAPON = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt"))["Phrases"]
+    CFG_WEAPONS = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
+    PHRASES_WEAPON = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt"))["Phrases"]
     
     def is_item_category(c):
         return "enhanceweapon_click" not in c and "cost" not in c
@@ -594,8 +695,8 @@ def compile_weapon():
     taglist_str = "  \n".join({f" - #{tag}" for tag in tags})
     MARKDOWN_WEAPON = f"**Available tags:** \n{taglist_str}  \n"+MARKDOWN_WEAPON
 
-    write("items.md", MARKDOWN_WEAPON)
-    write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
+    util.write("items.md", MARKDOWN_WEAPON)
+    util.write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
 
 ## COMPILE SKILLTREE CFG -------------------------------------------------------------------------------------------------
 
@@ -610,7 +711,7 @@ def compile_skilltree():
     //	"min"	"-1"	// Charge Required from Paren	t
     //	"key"	""	// Inventory Item Required
     """
-    SKILLTREE_CFG = KeyValues1.parse(read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/skilltree.cfg"))
+    SKILLTREE_CFG = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/skilltree.cfg"))
     # strange formatting of the string I know
     MARKDOWN_SKILLTREE = """## Legend
 - MIN: Minimum amount of ranks needed in parent skill to unlock  
@@ -643,7 +744,7 @@ def compile_skilltree():
     
     MARKDOWN_SKILLTREE = skill_block(0,0,SKILLTREE_CFG,list(SKILLTREE_CFG.keys())[0],MARKDOWN_SKILLTREE,0)
     MARKDOWN_SKILLTREE += "```"
-    write("skilltree.md", MARKDOWN_SKILLTREE)
+    util.write("skilltree.md", MARKDOWN_SKILLTREE)
 
 compile_weapon()
 compile_waveset_npc()

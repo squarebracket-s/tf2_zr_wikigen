@@ -7,8 +7,9 @@ Progress:
 - [x] Waveset data
   - [x] Parsing multiple configs
   - [x] List config modifiers
+  - [x] Map-specific wavesets
 - [x] NPC data
-  - [ ] Case for non-shared file with multiple NPC_Add calls
+  - [x] Case for non-shared file with multiple NPC_Add calls
   - [x] Handle health cases like carrier?4500:(elite?5000:4000)HP, data[0]?3750:3000HP, elite?7200:5700HP
 - [x] Item data
   - [x] Items
