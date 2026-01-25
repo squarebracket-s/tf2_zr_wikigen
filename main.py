@@ -1,6 +1,7 @@
 import os
 import pathlib
 from keyvalues1 import KeyValues1
+from collections import defaultdict
 import vtf2img
 import re
 
@@ -313,13 +314,13 @@ def compile_waveset_npc():
 
 
         if "Waves" in WAVESET_LIST:
-            waves = WAVESET_LIST["Waves"]
+            wavesets = WAVESET_LIST["Waves"]
         else: # Assume data being in the cfg file itself. See: maps/zr_bossrush.cfg
-            waves = WAVESET_LIST
+            wavesets = WAVESET_LIST
 
         MARKDOWN_WAVESETS = f"Starting cash: ${WAVESET_LIST["cash"]}  \n{"# Wavesets"*int(not map_mode)}  \n"
         if not map_mode:
-            for waveset_name in waves:
+            for waveset_name in wavesets:
                 MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
         else:
             n = cfg.split("/")[-1].replace(".cfg","")
@@ -330,10 +331,10 @@ def compile_waveset_npc():
             for modifiers in WAVESET_LIST["Modifiers"]:
                 MARKDOWN_WAVESETS += f"- [{modifiers}](#{util.to_section_link(modifiers)})  \n"    
         
-        for waveset_name in waves:
+        for waveset_name in wavesets:
             self_destruct = False
-            if "file" in waves[waveset_name]:
-                waveset_file = waves[waveset_name]["file"]
+            if "file" in wavesets[waveset_name]:
+                waveset_file = wavesets[waveset_name]["file"]
                 util.log(f"    {waveset_name}{" "*(35-len(waveset_name))}| {waveset_file}")
                 wave_cfg = util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{waveset_file}.cfg")
                 # Waveset-specific typo fixes (or just removing lines that break the parser)
@@ -342,8 +343,8 @@ def compile_waveset_npc():
 
                 WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
 
-                if "desc" in waves[waveset_name]:
-                    waveset_desc_key = waves[waveset_name]["desc"]
+                if "desc" in wavesets[waveset_name]:
+                    waveset_desc_key = wavesets[waveset_name]["desc"]
                     # Blame artvin PR #895 for not translating a desc
                     if waveset_desc_key in PHRASES_WAVESET:
                         desc = PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")
@@ -354,7 +355,13 @@ def compile_waveset_npc():
                 MARKDOWN_WAVESETS += f"# {waveset_name}  \n[Back to top](#wavesets)  \n{desc}  \n"
             else:
                 self_destruct = True
-                WAVESET_DATA = waves
+                WAVESET_DATA = wavesets
+            
+            wd = defaultdict(str,WAVESET_DATA)
+            a_npc = f"NPC Author{"s" * int("," in wd["author_npcs"])}: {wd["author_npcs"]}  \n" if wd["author_npcs"] != "" else ""
+            a_format = f"Format Author{"s" * int("," in wd["author_format"])}: {wd["author_format"]}  \n" if wd["author_format"] != "" else ""
+            a_raid = f"Raid Author{"s" * int("," in wd["author_raid"])}: {wd["author_raid"]}  \n" if wd["author_raid"] != "" else ""
+            MARKDOWN_WAVESETS += f"{a_npc}{a_format}{a_raid}"
             
             for wave in WAVESET_DATA:
                 wave_data = WAVESET_DATA[wave]
@@ -385,9 +392,10 @@ def compile_waveset_npc():
                                 try: int(wave_entry_data); continue # skip if not actual music entry e.g. "music_outro_duration"	"65"
                                 except ValueError: pass
                             else:
+                                wave_entry_data = defaultdict(str,wave_entry_data)
                                 name = wave_entry_data["file"].replace("#","")
-                                if "name" in wave_entry_data: name = wave_entry_data["name"]
-                                if "author" in wave_entry_data: author = f"by {wave_entry_data["author"]}"
+                                if wave_entry_data["name"] != "": name = wave_entry_data["name"]
+                                if wave_entry_data["author"] != "": author = f"by {wave_entry_data["author"]}"
                                 else: author = ""
                                 music = f"{name} {author}"
                                 mfilename = wave_entry_data["file"].replace("#","")
