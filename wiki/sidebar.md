@@ -5,7 +5,7 @@
  - [Skilltree](Skilltree)
   
  **Server Configs**
- - [Classic](Wavesets-Classic)
- - [Fastmode](Wavesets-Fastmode)
- - [redsun.tf Fastmode](Wavesets-Fastmode-Redsun)
+ - [Classic](Classic)
+ - [Fastmode](Fastmode)
+ - [redsun.tf Fastmode](Fastmode-Redsun)
  

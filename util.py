@@ -23,7 +23,8 @@ def to_section_link(str_, pre_h=False):
     return f"{"-"*int(pre_h)}{str_.lower().replace(" ","-")}"
 
 def md_img(url, alt, width=16):
-    return f'<img src="{url}" alt="{alt}" width="{width}"/>'
+    #return f'<img src="{url}" alt="{alt}" width="{width}"/>'
+    return f'<img src="{url}" width="{width}"/>'
 
 def normalize_whitespace(str_):
     return " ".join(str_.split())
