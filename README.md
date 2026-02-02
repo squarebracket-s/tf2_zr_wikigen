@@ -15,7 +15,7 @@ Script that utilises code from https://github.com/artvin01/TF2-Zombie-Riot to ge
   - [x] Items
   - [x] Weapon Paps
 - [x] Skill tree data
-- [ ] Modularise parsing
+- [x] Modularise parsing
 - [ ] cfg generator utilising `say` commands for boss info?
   
 Icon source: https://github.com/feathericons/feather

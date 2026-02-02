@@ -1,14 +1,24 @@
 import hashlib, os, datetime
-DEBUG = False
+
+# https://stackoverflow.com/questions/3768895/how-to-make-a-class-json-serializable
+# Allow classes to define __json__ to be JSON serializable
+from json import JSONEncoder
+def wrapped_default(self, obj):
+    return getattr(obj.__class__, "__json__", wrapped_default.default)(obj)
+wrapped_default.default = JSONEncoder().default
+JSONEncoder.original_default = JSONEncoder.default
+JSONEncoder.default = wrapped_default
+###
+
+CATEGORIES = []
 if "DEBUG" in os.environ:
-    try:
-        if bool(os.environ["DEBUG"]): DEBUG=True
-    except ValueError:
-        print("DEBUG env couldn't be converted to bool!")
+    CATEGORIES = [x.lower() for x in os.environ["DEBUG"].split(",")]
+
 
 def id_from_str(string):
     # https://stackoverflow.com/questions/49808639/generate-a-variable-length-hash
     return hashlib.shake_256(string.encode("utf-8")).hexdigest(4)
+
 
 def to_section_link(str_, pre_h=False):
     remove = [
@@ -22,15 +32,30 @@ def to_section_link(str_, pre_h=False):
         str_ = str_.replace(r,"")
     return f"{"-"*int(pre_h)}{str_.lower().replace(" ","-")}"
 
+
 def md_img(url, alt, width=16):
     #return f'<img src="{url}" alt="{alt}" width="{width}"/>'
     return f'<img src="{url}" width="{width}"/>'
 
+
 def normalize_whitespace(str_):
     return " ".join(str_.split())
 
-def debug(str_,color="OKGREEN"):
-    if DEBUG: log(str_,color)
+
+def remove_multiline_comments(d): # Fixes the script interpreting the comment in npc_headcrabzombie.sp as actual data
+    new_str = ""
+    reading_comment = False
+    for line in d.splitlines():
+        if line == "/*": reading_comment=True
+        if line == "*/": reading_comment=False
+        if not reading_comment:
+            new_str += line
+    return new_str
+
+
+def debug(str_, category, color="OKGREEN"):
+    if category in CATEGORIES: log(str_,color)
+
 
 # Logging
 bcolors = {
@@ -56,6 +81,7 @@ pcolors = {
     "BOLD": (230,230,230),
     "UNDERLINE": (200,200,200)
 }
+
 
 def log(message, color="OKGREEN"):
     time = f"[{datetime.datetime.now().strftime('%H:%M:%S')}] "
