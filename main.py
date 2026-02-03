@@ -8,7 +8,7 @@ import modules.skilltree
 
 
 WIKI_FILES = {}
-#WIKI_FILES = modules.wavesets.parse() | WIKI_FILES # Merges WIKI_FILES dict with those of the wavesets module
+WIKI_FILES = modules.wavesets.parse() | WIKI_FILES # Merges WIKI_FILES dict with those of the wavesets module
 WIKI_FILES = modules.weapon.parse() | WIKI_FILES
 WIKI_FILES = modules.skilltree.parse() | WIKI_FILES
 
