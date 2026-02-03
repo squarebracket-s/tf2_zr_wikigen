@@ -8,6 +8,7 @@ Script that utilises code from https://github.com/artvin01/TF2-Zombie-Riot to ge
   - [x] Parsing multiple configs
   - [x] List config modifiers
   - [x] Map-specific wavesets
+  - [ ] Support special wavesets like rogue or construction
 - [x] NPC data
   - [x] Case for non-shared file with multiple NPC_Add calls
   - [x] Handle health cases like carrier?4500:(elite?5000:4000)HP, data[0]?3750:3000HP, elite?7200:5700HP
@@ -15,10 +16,8 @@ Script that utilises code from https://github.com/artvin01/TF2-Zombie-Riot to ge
   - [x] Items
   - [x] Weapon Paps
 - [x] Skill tree data
-- [ ] Modularise parsing
+- [x] Modularise parsing
   - [x] NPC Class
   - [x] WeaponPap Class
-  - [ ] Waveset/Wave Class?
-- [ ] cfg generator utilising `say` commands for boss info?
   
 Icon source: https://github.com/feathericons/feather

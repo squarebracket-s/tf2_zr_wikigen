@@ -30,6 +30,7 @@ class NPC:
         util.debug(f"Init NPC {self.path}", "npc", "OKCYAN")
         self.file_data = util.read(self.path)
         self.file_data = util.remove_multiline_comments(self.file_data)
+        #self.file_data = self.file_data.replace("	","")
         if ("npc_donoteveruse" not in self.file_data and "NPC_Add" in self.file_data):
 
             # Get NPC name
@@ -54,7 +55,7 @@ class NPC:
 
             # Get icon
             try:
-                self.icon = self.file_data.split(f"	strcopy({self.main_prefix}.Icon, sizeof({self.main_prefix}.Icon), \"")[1].split("\");")[0]
+                self.icon = self.file_data.split(f"strcopy({self.main_prefix}.Icon, sizeof({self.main_prefix}.Icon), \"")[1].split("\");")[0]
             except IndexError:
                 self.icon = ""
 
@@ -84,7 +85,7 @@ class NPC:
 
     def _get_name(self):
         try:
-            self.name = self.file_data.split(f"	strcopy({self.main_prefix}.Name, sizeof({self.main_prefix}.Name), \"")[1].split("\");")[0]
+            self.name = self.file_data.split(f"strcopy({self.main_prefix}.Name, sizeof({self.main_prefix}.Name), \"")[1].split("\");")[0]
         except IndexError:
             self.name = None
     
@@ -113,13 +114,13 @@ class NPC:
     
     def _set_npc_data_shared(self):
         # Several instances of NPC entry data, several instances of CClotBody in separate files
-        self.plugin = self.file_data.split(f"	strcopy({self.main_prefix}.Plugin, sizeof({self.main_prefix}.Plugin), \"")
+        self.plugin = self.file_data.split(f"strcopy({self.main_prefix}.Plugin, sizeof({self.main_prefix}.Plugin), \"")
         self.plugin = [item.split("\");")[0] for i,item in enumerate(self.plugin) if i > 0]
 
-        self.category = self.file_data.split(f"	{self.main_prefix}.Category = ")
+        self.category = self.file_data.split(f"{self.main_prefix}.Category = ")
         self.category = [item.split(";")[0] for i,item in enumerate(self.category) if i > 0]
 
-        self.flags = self.file_data.split(f"	{self.main_prefix}.Flags = ")
+        self.flags = self.file_data.split(f"{self.main_prefix}.Flags = ")
         self.flags = [item.split(";")[0].split("|") for i,item in enumerate(self.flags) if i > 0]
 
         base_path = self.path.replace(self.path.split("/")[-1],"") # remove deepest item
@@ -163,13 +164,13 @@ class NPC:
     
     def _set_npc_data_multi(self):
         # Several instances of NPC entry data, one instance of CClotBody
-        self.plugin = self.file_data.split(f"	strcopy({self.main_prefix}.Plugin, sizeof({self.main_prefix}.Plugin), \"")
+        self.plugin = self.file_data.split(f"strcopy({self.main_prefix}.Plugin, sizeof({self.main_prefix}.Plugin), \"")
         self.plugin = [item.split("\");")[0] for i,item in enumerate(self.plugin) if i > 0]
 
-        self.category = self.file_data.split(f"	{self.main_prefix}.Category = ")
+        self.category = self.file_data.split(f"{self.main_prefix}.Category = ")
         self.category = [item.split(";")[0] for i,item in enumerate(self.category) if i > 0]
 
-        self.flags = self.file_data.split(f"	{self.main_prefix}.Flags = ")
+        self.flags = self.file_data.split(f"{self.main_prefix}.Flags = ")
         self.flags = [item.split(";")[0].split("|") for i,item in enumerate(self.flags) if i > 0]
     
         try:
@@ -210,15 +211,15 @@ class NPC:
     
     def _set_npc_data_single(self):
         # One instance of everything
-        self.plugin = self.file_data.split(f"	strcopy({self.main_prefix}.Plugin, sizeof({self.main_prefix}.Plugin), \"")[1].split("\");")[0]
+        self.plugin = self.file_data.split(f"strcopy({self.main_prefix}.Plugin, sizeof({self.main_prefix}.Plugin), \"")[1].split("\");")[0]
 
         try:
-            self.category = self.file_data.split(f"	{self.main_prefix}.Category = ")[1].split(";")[0]
+            self.category = self.file_data.split(f"{self.main_prefix}.Category = ")[1].split(";")[0]
         except IndexError:
-            self.category = ""
+            self.category = f"404 prefix: {self.main_prefix}"
         
         try:
-            self.flags = self.file_data.split(f"	{self.main_prefix}.Flags = ")[1]
+            self.flags = self.file_data.split(f"{self.main_prefix}.Flags = ")[1]
             self.flags = self.flags.split(";")[0].split("|")
         except IndexError:
             self.flags = []
@@ -390,7 +391,7 @@ def parse():
                     if waveset_desc_key in PHRASES_WAVESET:
                         desc = PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")
                     else:
-                        desc = waveset_desc_key
+                        desc = waveset_desc_key.replace("\\n","  \n")
                 else:
                     desc = ""
                 MARKDOWN_WAVESETS += f"# {waveset_name}  \n{"[Back to top](#wavesets)  \n" * int(not map_mode)}{desc}  \n"
@@ -541,7 +542,7 @@ def parse():
                                 npc_flags += dflags + "  \n"
                             else:
                                 npc_flags = ""
-                            md_npc += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_flags}{npc_data.description.replace("\n"," ")}  \n"
+                            md_npc += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_flags}{npc_data.description}  \n"
                     else:
                         MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
 
