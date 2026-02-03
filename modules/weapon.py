@@ -48,13 +48,14 @@ class WeaponPap:
             desc = self.description # some paps don't have translation for whatever reason lmao
         
         extra_desc = self.extra_desc if len(self.extra_desc) > 0 else ""
+
         space_header = " "*self.depth
         space = " "*round(self.depth*1.5) # Scale a bit to align with header spacing
 
         if len(self.tags)>0: tags = f"{space}{self.tags}  \n"
         else: tags = ""
 
-        return f"### {space_header} {self.name} \\[{self.id}\\]  \n{tags}{space}${self.cost}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n{space}{extra_desc.replace("\\n",f"  \n{space}")}"
+        return f"### {space_header} {self.name} \\[{self.id}\\]  \n{tags}{space}${self.cost}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n{space}{extra_desc.replace("\\n",f"  \n{space}")}  \n"
     
     def to_link(self):
         return f"{" "*self.depth}[{self.name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{util.to_section_link(self.name,True)}-{self.id})  \n"
@@ -106,7 +107,7 @@ def parse():
                     links += pd.to_link()
                     if pd.pappaths!="0": md, links = item_block(pd, idx+int(pd.papskip), md, links,DEPTH+1)
             return md, links
-        # eugh
+        
         pap_md += f"# {weapon_name}  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Items#{util.to_section_link(weapon_name)})  \n"
         if "pappaths" in weapon_data: init_pap_paths = weapon_data["pappaths"]
         else: init_pap_paths = 1
