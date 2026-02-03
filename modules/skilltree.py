@@ -2,6 +2,8 @@
 import util
 from keyvalues1 import KeyValues1
 
+SKILLTREE_CFG = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/skilltree.cfg"))
+
 def parse():
     util.log("Parsing Skilltree...")
     """
@@ -13,7 +15,6 @@ def parse():
     //	"min"	"-1"	                    // Charge Required from Parent
     //	"key"	""	                        // Inventory Item Required
     """
-    SKILLTREE_CFG = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/skilltree.cfg"))
     # strange formatting of the string I know
     MARKDOWN_SKILLTREE = """## Legend
 - MIN: Minimum amount of ranks needed in parent skill to unlock  

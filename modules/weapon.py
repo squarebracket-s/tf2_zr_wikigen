@@ -2,13 +2,74 @@
 import util
 from keyvalues1 import KeyValues1
 
+PHRASES_WEAPON = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt"))["Phrases"]
+CFG_WEAPONS = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
+
+class WeaponPap:
+    def __init__(self, weapon_name, weapon_data, idx, depth):
+        self.depth = depth
+        pap_key = f"pap_{idx}_"
+        key_desc = pap_key+"desc"
+        if key_desc in weapon_data:
+            key_customname = pap_key + "custom_name"
+            if key_customname in weapon_data: self.name = weapon_data[key_customname]
+            else: self.name = weapon_name
+            
+            self.description = weapon_data[key_desc]
+
+            self.cost = weapon_data[pap_key+"cost"]
+
+            if pap_key+"tags" in weapon_data: self.tags = " ".join(f"#{tag}" for tag in weapon_data[pap_key+"tags"].split(";") if tag != "")
+            else: self.tags = ""
+
+            # There has got to a better way to do this
+            key_papskip = pap_key+"papskip"
+            if key_papskip in weapon_data: self.papskip = weapon_data[key_papskip]
+            else: self.papskip = "0"
+
+            key_pappaths = pap_key+"pappaths"
+            if key_pappaths in weapon_data: self.pappaths = weapon_data[key_pappaths]
+            else: self.pappaths = "1"
+
+            key_extra_desc = pap_key+"extra_desc"
+            if key_extra_desc in weapon_data: self.extra_desc = weapon_data[key_extra_desc]
+            else: self.extra_desc = ""
+
+            self.attributes = weapon_data[pap_key+"attributes"]
+            self.id = util.id_from_str(self.attributes)
+        
+        self.valid = key_desc in weapon_data
+
+
+    def to_md(self):
+        if self.description in PHRASES_WEAPON:
+            desc = PHRASES_WEAPON[self.description]["en"]
+        else:
+            desc = self.description # some paps don't have translation for whatever reason lmao
+        
+        extra_desc = self.extra_desc if len(self.extra_desc) > 0 else ""
+        space_header = " "*self.depth
+        space = " "*round(self.depth*1.5) # Scale a bit to align with header spacing
+
+        if len(self.tags)>0: tags = f"{space}{self.tags}  \n"
+        else: tags = ""
+
+        return f"### {space_header} {self.name} \\[{self.id}\\]  \n{tags}{space}${self.cost}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n{space}{extra_desc.replace("\\n",f"  \n{space}")}"
+    
+    def to_link(self):
+        return f"{" "*self.depth}[{self.name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{util.to_section_link(self.name,True)}-{self.id})  \n"
+
+class WeaponPap_Dummy:
+    def __init__(self, init_pap_paths):
+        self.papskip = "0"
+        self.pappaths = init_pap_paths
+
+
 def parse():
     util.log("Parsing Weapon List...")
 
     MARKDOWN_WEAPON = ""
     MARKDOWN_WEAPON_PAP = ""
-    CFG_WEAPONS = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
-    PHRASES_WEAPON = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt"))["Phrases"]
     
     def is_item_category(c):
         return "enhanceweapon_click" not in c and "cost" not in c
@@ -25,61 +86,6 @@ def parse():
     def is_category(c):
         return "author" not in c and "filter" in c and "whiteout" not in c
 
-
-    def extract_pap_data(weapon_name, weapon_data, idx):
-        pap_key = f"pap_{idx}_"
-        key_desc = pap_key+"desc"
-        if key_desc in weapon_data:
-            key_customname = pap_key + "custom_name"
-            if key_customname in weapon_data: pap_name = weapon_data[key_customname]
-            else: pap_name = weapon_name
-            
-            pap_desc = weapon_data[key_desc]
-
-            pap_cost = weapon_data[pap_key+"cost"]
-
-            if pap_key+"tags" in weapon_data: pap_tags = " ".join(f"#{tag}" for tag in weapon_data[pap_key+"tags"].split(";") if tag != "")
-            else: pap_tags = ""
-
-            # There has got to a better way to do this
-            key_papskip = pap_key+"papskip"
-            if key_papskip in weapon_data: pap_skip = weapon_data[key_papskip]
-            else: pap_skip = "0"
-
-            key_pappaths = pap_key+"pappaths"
-            if key_pappaths in weapon_data: pap_paths = weapon_data[key_pappaths]
-            else: pap_paths = "1"
-
-            key_extra_desc = pap_key+"extra_desc"
-            if key_extra_desc in weapon_data: pap_extra_desc = weapon_data[key_extra_desc]
-            else: pap_extra_desc = ""
-
-            pap_attributes = weapon_data[pap_key+"attributes"]
-
-            return {"name": pap_name, "description": pap_desc, "extra_desc": pap_extra_desc, "cost": pap_cost, "tags": pap_tags, "_skip": pap_skip, "_paths": pap_paths, "_attributes": pap_attributes}
-        return None
- 
-  
-    def pap_data_to_md(data,depth):
-        if data["description"] in PHRASES_WEAPON:
-            desc = PHRASES_WEAPON[data["description"]]["en"]
-        else:
-            desc = data["description"] # some paps don't have translation for whatever reason lmao
-        
-        extra_desc = data["extra_desc"] if len(data["extra_desc"]) > 0 else ""
-        space_header = " "*depth
-        space = " "*round(depth*1.5) # Scale a bit to align with header spacing
-
-        if len(data["tags"])>0: tags = f"{space}{data["tags"]}  \n"
-        else: tags = ""
-
-        return f"### {space_header} {data["name"]} \\[{util.id_from_str(data["_attributes"])}\\]  \n{tags}{space}${data["cost"]}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n{space}{extra_desc.replace("\\n",f"  \n{space}")}"
-
-
-    def pap_data_to_link(data):
-        return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{util.to_section_link(data["name"],True)}-{util.id_from_str(data["_attributes"])})  \n"
-
-
     def interpret_weapon_paps(weapon_name,weapon_data):
         """
         pap_#_pappaths define how many paps you can choose from below ("2" paths on "PaP 1" allows you to choose between "PaP 2" and "PaP 3")
@@ -89,23 +95,23 @@ def parse():
         pap_md = ""
         pap_links = ""
         def item_block(parent_pap,idx,md,links,DEPTH):
-            for i in range(int(parent_pap["_paths"])):
+            for i in range(int(parent_pap.pappaths)):
                 idx += 1
-                if int(parent_pap["_paths"])>1:
+                if int(parent_pap.pappaths)>1:
                     md += f"## {" "*DEPTH} _Path {i+1}_  \n"
                     links += f"{" "*DEPTH} _Path {i+1}_  \n"
-                pd = extract_pap_data(weapon_name,weapon_data,idx)#+int(parent_pap["_skip"]))
-                if pd:
-                    md += pap_data_to_md(pd,DEPTH)
-                    links += (" "*DEPTH) + pap_data_to_link(pd)
-                    if pd["_paths"]!="0": md, links = item_block(pd, idx+int(pd["_skip"]), md, links,DEPTH+1)
+                pd = WeaponPap(weapon_name,weapon_data,idx,DEPTH)
+                if pd.valid:
+                    md += pd.to_md()
+                    links += pd.to_link()
+                    if pd.pappaths!="0": md, links = item_block(pd, idx+int(pd.papskip), md, links,DEPTH+1)
             return md, links
         # eugh
         pap_md += f"# {weapon_name}  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Items#{util.to_section_link(weapon_name)})  \n"
         if "pappaths" in weapon_data: init_pap_paths = weapon_data["pappaths"]
         else: init_pap_paths = 1
         pap_links = "**Paps**  \n"
-        pap_md, pap_links = item_block({"_skip": "0", "_paths": init_pap_paths}, pap_idx, pap_md, pap_links, 0)
+        pap_md, pap_links = item_block(WeaponPap_Dummy(init_pap_paths), pap_idx, pap_md, pap_links, 0)
         return pap_md, pap_links
 
 

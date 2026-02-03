@@ -17,7 +17,7 @@ Script that utilises code from https://github.com/artvin01/TF2-Zombie-Riot to ge
 - [x] Skill tree data
 - [ ] Modularise parsing
   - [x] NPC Class
-  - [ ] WeaponPap Class
+  - [x] WeaponPap Class
   - [ ] Waveset/Wave Class?
 - [ ] cfg generator utilising `say` commands for boss info?
   
