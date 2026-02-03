@@ -10,6 +10,8 @@ JSONEncoder.original_default = JSONEncoder.default
 JSONEncoder.default = wrapped_default
 ###
 
+# Use ' ' for spacing in markdown
+
 CATEGORIES = []
 if "DEBUG" in os.environ:
     CATEGORIES = [x.lower() for x in os.environ["DEBUG"].split(",")]

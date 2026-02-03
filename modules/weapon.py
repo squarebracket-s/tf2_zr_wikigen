@@ -4,9 +4,9 @@ from keyvalues1 import KeyValues1
 
 def parse():
     util.log("Parsing Weapon List...")
+
     MARKDOWN_WEAPON = ""
     MARKDOWN_WEAPON_PAP = ""
-    tags = []
     CFG_WEAPONS = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
     PHRASES_WEAPON = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt"))["Phrases"]
     
@@ -24,6 +24,7 @@ def parse():
 
     def is_category(c):
         return "author" not in c and "filter" in c and "whiteout" not in c
+
 
     def extract_pap_data(weapon_name, weapon_data, idx):
         pap_key = f"pap_{idx}_"
@@ -57,7 +58,8 @@ def parse():
 
             return {"name": pap_name, "description": pap_desc, "extra_desc": pap_extra_desc, "cost": pap_cost, "tags": pap_tags, "_skip": pap_skip, "_paths": pap_paths, "_attributes": pap_attributes}
         return None
-    
+ 
+  
     def pap_data_to_md(data,depth):
         if data["description"] in PHRASES_WEAPON:
             desc = PHRASES_WEAPON[data["description"]]["en"]
@@ -72,6 +74,7 @@ def parse():
         else: tags = ""
 
         return f"### {space_header} {data["name"]} \\[{util.id_from_str(data["_attributes"])}\\]  \n{tags}{space}${data["cost"]}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n{space}{extra_desc.replace("\\n",f"  \n{space}")}"
+
 
     def pap_data_to_link(data):
         return f"[{data["name"]}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{util.to_section_link(data["name"],True)}-{util.id_from_str(data["_attributes"])})  \n"
@@ -154,6 +157,7 @@ def parse():
         return markdown, markdown_pap, tags
 
 
+    tags = []
     for item_category in CFG_WEAPONS:
         if is_item_category(CFG_WEAPONS[item_category]):
             MARKDOWN_WEAPON, MARKDOWN_WEAPON_PAP, tags = item_block(item_category,CFG_WEAPONS[item_category],0,MARKDOWN_WEAPON,MARKDOWN_WEAPON_PAP, tags)
@@ -163,3 +167,7 @@ def parse():
 
     util.write("items.md", MARKDOWN_WEAPON)
     util.write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
+    return {
+        "items.md": "Items.md",
+        "weapon_paps.md": "Weapon_Paps.md"
+    }

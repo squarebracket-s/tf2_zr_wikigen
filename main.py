@@ -4,21 +4,11 @@ import modules.skilltree
 
 import os, util
 
-# Utility functions
-# U+3164 -> 'ㅤ'
-# also ' '
-WIKI_FILES = {
-    "items.md": "Items.md",
-    "weapon_paps.md": "Weapon_Paps.md",
-    "npcs.md": "NPCs.md",
-    "skilltree.md": "Skilltree.md",
-    "sidebar.md": "_Sidebar.md",
-    "home.md": "Home.md"
-}
 
+WIKI_FILES = {}
 WIKI_FILES = modules.wavesets.parse() | WIKI_FILES # Merges WIKI_FILES dict with those of the wavesets module
-modules.weapon.parse()
-modules.skilltree.parse()
+WIKI_FILES = modules.weapon.parse() | WIKI_FILES
+WIKI_FILES = modules.skilltree.parse() | WIKI_FILES
 
 # Move files to wiki
 if os.path.isdir("tf2_zr_wikigen.wiki/"):

@@ -15,7 +15,10 @@ Script that utilises code from https://github.com/artvin01/TF2-Zombie-Riot to ge
   - [x] Items
   - [x] Weapon Paps
 - [x] Skill tree data
-- [x] Modularise parsing
+- [ ] Modularise parsing
+  - [x] NPC Class
+  - [ ] WeaponPap Class
+  - [ ] Waveset/Wave Class?
 - [ ] cfg generator utilising `say` commands for boss info?
   
 Icon source: https://github.com/feathericons/feather

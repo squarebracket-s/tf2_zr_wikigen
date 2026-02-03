@@ -5,13 +5,13 @@ from keyvalues1 import KeyValues1
 def parse():
     util.log("Parsing Skilltree...")
     """
-    	"name"		"Luck Up 1"	// Name
+    	"name"		"Luck Up 1"	            // Name
         "player"	"SkillPlayer_LuckUp"	// Function
-    //	"weapon"	"Tree_LuckUp"	// Functio	n
-        "max"	"5"	// Max Charges	
-        "cost"	"1"	// Point Cos	t
-    //	"min"	"-1"	// Charge Required from Paren	t
-    //	"key"	""	// Inventory Item Required
+    //	"weapon"	"Tree_LuckUp"	        // Function
+        "max"	"5"	                        // Max Charges	
+        "cost"	"1"	                        // Point Cost
+    //	"min"	"-1"	                    // Charge Required from Parent
+    //	"key"	""	                        // Inventory Item Required
     """
     SKILLTREE_CFG = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/skilltree.cfg"))
     # strange formatting of the string I know
@@ -47,3 +47,4 @@ def parse():
     MARKDOWN_SKILLTREE = skill_block(0,0,SKILLTREE_CFG,list(SKILLTREE_CFG.keys())[0],MARKDOWN_SKILLTREE,0)
     MARKDOWN_SKILLTREE += "```"
     util.write("skilltree.md", MARKDOWN_SKILLTREE)
+    return {"skilltree.md": "Skilltree.md"}

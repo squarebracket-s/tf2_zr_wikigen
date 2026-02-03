@@ -293,7 +293,11 @@ class NPC_Dummy:
                 
 
 def parse():
-    generated_files = {}
+    generated_files = {
+        "npcs.md": "NPCs.md",
+        "home.md": "Home.md",
+        "sidebar.md": "_Sidebar.md"
+    }
 
     def parse_all_npcs():
         npc_by_file = {}
@@ -561,7 +565,8 @@ def parse():
         util.write(filename, MARKDOWN_WAVESETS)
         return md_npc, md_mapsets
 
-    # TODO: Map-specific wavesets such as Matrix (stored in addons/sourcemod/zombie_riot/config/maps/)
+    # TODO: Special waveset support e.g. rogue or construction
+
     # NPC list is global to prevent duplicates
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
     MARKDOWN_NPCS = ""
