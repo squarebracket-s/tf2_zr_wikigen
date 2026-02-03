@@ -58,7 +58,7 @@ class WeaponPap:
         return f"### {space_header} {self.name} \\[{self.id}\\]  \n{tags}{space}${self.cost}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n{space}{extra_desc.replace("\\n",f"  \n{space}")}  \n"
     
     def to_link(self):
-        return f"{" "*self.depth}[{self.name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{util.to_section_link(self.name,True)}-{self.id})  \n"
+        return f"{" "*self.depth}[{self.name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{util.to_section_link(self.name,self.depth>0)}-{self.id})  \n"
 
 class WeaponPap_Dummy:
     def __init__(self, init_pap_paths):
