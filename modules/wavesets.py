@@ -541,7 +541,7 @@ def parse():
                                 npc_flags += dflags + "  \n"
                             else:
                                 npc_flags = ""
-                            md_npc += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_flags.replace("\n"," ")}{npc_data.description.replace("\n"," ")}  \n"
+                            md_npc += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_flags}{npc_data.description.replace("\n"," ")}  \n"
                     else:
                         MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
 
