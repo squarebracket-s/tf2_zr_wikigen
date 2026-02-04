@@ -69,11 +69,12 @@ bcolors = {
     "FAIL": '\033[91m',
     "ENDC": '\033[0m',
     "BOLD": '\033[1m',
-    "UNDERLINE": '\033[4m'
+    "UNDERLINE": '\033[4m',
+    "FAINT": '\033[2m',
 }
 
 
-pcolors = {
+"""pcolors = {
     "HEADER": (255,255,255),
     "OKBLUE": (12,109,240),
     "OKCYAN": (12,240,196),
@@ -82,7 +83,7 @@ pcolors = {
     "FAIL": (255,0,0),
     "BOLD": (230,230,230),
     "UNDERLINE": (200,200,200)
-}
+}"""
 
 
 def log(message, color="OKGREEN"):
@@ -91,7 +92,7 @@ def log(message, color="OKGREEN"):
     if color == "WARNING": pre="[WARN] "
     if color == "FAIL": pre="[ERR] "
     if "OK" in color: pre="[LOG] "
-    print(bcolors[color] + time + pre + message + bcolors["ENDC"])
+    print(bcolors["FAINT"] + time + bcolors["ENDC"] + bcolors[color]  + pre + message + bcolors["ENDC"])
 
 
 def read(filename):

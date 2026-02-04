@@ -480,7 +480,7 @@ def parse():
                                 elif data_key not in npc_data.health: data_key = "default";
 
                                 npc_name_prefix += wave_entry_data["data"].capitalize()
-                                util.debug(f"Parsing HP Value{npc_data.health} DATA value {wave_entry_data["data"]} CHOSEN value {data_key}", "OKCYAN")
+                                util.debug(f"Parsing HP Value {npc_data.health} DATA value {wave_entry_data["data"]} CHOSEN value {data_key}", "npc", "OKCYAN")
                                 h = f" {npc_data.health[data_key.lower()]}"
                             else:
                                 h = npc_data.health["default"]

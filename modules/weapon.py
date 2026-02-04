@@ -95,17 +95,17 @@ def parse():
         pap_idx = 0
         pap_md = ""
         pap_links = ""
-        def item_block(parent_pap,idx,md,links,DEPTH):
+        def item_block(parent_pap,idx,md,links,depth):
             for i in range(int(parent_pap.pappaths)):
                 idx += 1
                 if int(parent_pap.pappaths)>1:
-                    md += f"## {" "*DEPTH} _Path {i+1}_  \n"
-                    links += f"{" "*DEPTH} _Path {i+1}_  \n"
-                pd = WeaponPap(weapon_name,weapon_data,idx,DEPTH)
+                    md += f"## {" "*depth} _Path {i+1}_  \n"
+                    links += f"{" "*depth} _Path {i+1}_  \n"
+                pd = WeaponPap(weapon_name,weapon_data,idx,depth)
                 if pd.valid:
                     md += pd.to_md()
                     links += pd.to_link()
-                    if pd.pappaths!="0": md, links = item_block(pd, idx+int(pd.papskip), md, links,DEPTH+1)
+                    if pd.pappaths!="0": md, links = item_block(pd, idx+int(pd.papskip), md, links,depth+1)
             return md, links
         
         pap_md += f"# {weapon_name}  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Items#{util.to_section_link(weapon_name)})  \n"
