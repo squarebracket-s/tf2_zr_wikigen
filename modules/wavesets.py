@@ -400,7 +400,7 @@ def parse():
 
             abovelimit = False if "fakemaxwaves" not in wd else wave_idx > int(wd["fakemaxwaves"])
 
-            md_wavesets += f"## {"=="*int(abovelimit)}{wave_idx}{"=="*int(abovelimit)}  \n"
+            md_wavesets += f"## {wave_idx}  \n" # marking in headers does not work in github markdown!! TODO
             for wave_entry in wave_data:
                 wave_entry_data = wave_data[wave_entry]
                 try:
@@ -568,6 +568,8 @@ def parse():
             # mapset, i.e. only one waveset
             # also add link to its config file in md_mapsets (mapset outline in home.md and sidebar.md)
             MARKDOWN_WAVESETS, md_npc = parse_waveset(cfg_name, WAVESET_LIST, MARKDOWN_WAVESETS, md_npc)
+        
+        if map_mode: 
             n = cfg_name.split("/")[-1].replace(".cfg","")
             md_mapsets += f"- [{n}]({n})  \n"
         
