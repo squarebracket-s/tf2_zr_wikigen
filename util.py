@@ -55,6 +55,21 @@ def remove_multiline_comments(d): # Fixes the script interpreting the comment in
     return new_str
 
 
+def is_float(str_):
+    try:
+        float(str_)
+        return True
+    except ValueError:
+        return False
+
+
+def as_duration(str_):
+    m, s = divmod(int(str_), 60)
+    dm = "" if m == 0 else f"{m}m "
+    ds = "" if s == 0 else f"{s}s "
+    return f'{dm}{ds}'
+
+
 def debug(str_, category, color="OKGREEN"):
     if category in CATEGORIES: log(str_,color)
 

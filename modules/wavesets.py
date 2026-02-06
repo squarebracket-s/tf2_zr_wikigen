@@ -292,7 +292,7 @@ class NPC_Dummy:
             "filetype": self.filetype
         }
                 
-
+waveset_cache = {}
 def parse():
     generated_files = {
         "npcs.md": "NPCs.md",
@@ -339,43 +339,210 @@ def parse():
             w = w.format(*(" "*i + delay_str for i in range(delay_count)))
         return w
     
-
-    def parse_waveset_list_cfg(cfg, md_npc, md_mapsets):
-        WAVESET_LIST = KeyValues1.parse(util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{cfg}"))
+    def add_npc(plugin, data):
+        if plugin not in added_npc_ids:
+            added_npc_ids.append(plugin)
+            npc_data = NPCS_BY_FILENAME[plugin]
+            if type(npc_data.health) == dict:
+                npc_health = ""
+                for k,v in npc_data.health.items():
+                    npc_health += f"{k.capitalize()}: {v}HP"
+            else:
+                npc_health = f"Default health: {npc_data.health}  \n" if npc_data.health != "" else ""
+            npc_cat = f"Category: {npc_data.category}  \n" if npc_data.category != "" else ""
+            if "0" not in npc_data.flags and "-1" not in npc_data.flags:
+                npc_flags = "Flags: "
+                dflags = ", ".join([FLAG_MAPPINGS[item] for item in npc_data.flags])
+                npc_flags += dflags + "  \n"
+            else:
+                npc_flags = ""
+            return f"# {data["image"].replace("16","32")} {data["name"]}  \n_{plugin}_  \n{npc_health}{npc_flags}{npc_data.description}  \n"
+        return ""
+    
+    def parse_waveset(name, data, md_wavesets, md_npc):
+        global waveset_cache
+        if name in waveset_cache:
+            util.log(f"    -> Returning cache for {name}")
+            md_wavesets += waveset_cache[name]
+            return md_wavesets, md_npc
         
-        if "Setup" not in WAVESET_LIST and "Custom" not in WAVESET_LIST: # Unsupported waveset cfg (Rogue, Bunker, etc.)
-            util.log(f"Unsupported waveset cfg {cfg}!","WARNING")
-            return md_npc, md_mapsets
-        util.log(f"Parsing waveset list cfg: {cfg}")
-
-        map_mode = "Custom" in WAVESET_LIST
-        if map_mode: # map-specific waveset list config
-            WAVESET_LIST = WAVESET_LIST["Custom"]
+        wd = defaultdict(str,data)
+        a_npc = f"NPC Author{"s" * int("," in wd["author_npcs"])}: {wd["author_npcs"]}  \n" if wd["author_npcs"] != "" else ""
+        a_format = f"Format Author{"s" * int("," in wd["author_format"])}: {wd["author_format"]}  \n" if wd["author_format"] != "" else ""
+        a_raid = f"Raid Author{"s" * int("," in wd["author_raid"])}: {wd["author_raid"]}  \n" if wd["author_raid"] != "" else ""
+        complete_item = f"Item on win: {wd["complete_item"]}  \n" if wd["complete_item"] != "" else ""
+        md_wavesets += f"{a_npc}{a_format}{a_raid}{complete_item}"
         
-        WAVESET_LIST = WAVESET_LIST["Setup"]
+        wave_idx = 0
+        for wave in data:
+            wave_data = data[wave]
+            try:
+                int(wave)
+            except ValueError:
+                if wave.startswith("music_"):
+                    wave_data = defaultdict(str,wave_data)
+                    music_case = wave.split("_")[1].capitalize()
+                    music_name = wave_data["file"].replace("#","")
+                    if wave_data["name"] != "": music_name = wave_data["name"]
+                    if wave_data["author"] != "": author = f"by {wave_data["author"]}"
+                    else: author = ""
+                    music = f"{music_name} {author}"
+                    mfilename = wave_data["file"].replace("#","")
+                    if mfilename == "vo/null.mp3": continue
+                    file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
+                    if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
+                    md_wavesets += f"{ICON_MUSIC} **{music_case}:** {music} {file}  \n"
+                continue
 
+            wave_npc_amt = sum([int(util.is_float(entry)) for entry in wave_data])
+            if len(wave_data)==0 or wave_npc_amt == 0: continue
+            wave_idx += 1
 
-        if "Waves" in WAVESET_LIST:
+            abovelimit = False if "fakemaxwaves" not in wd else wave_idx > int(wd["fakemaxwaves"])
+
+            md_wavesets += f"## {"=="*int(abovelimit)}{wave_idx}{"=="*int(abovelimit)}  \n"
+            for wave_entry in wave_data:
+                wave_entry_data = wave_data[wave_entry]
+                try:
+                    float(wave_entry)
+                except ValueError:
+                    if wave_entry.startswith("music_"):
+                        icon = util.md_img(BUILTIN_IMG+"music.svg","M2")
+                        if type(wave_entry_data) == str:
+                            mfilename = wave_entry_data.replace("#","")
+                            music = mfilename
+                            try: int(wave_entry_data); continue # skip if not actual music entry e.g. "music_outro_duration"	"65"
+                            except ValueError: pass
+                        else:
+                            wave_entry_data = defaultdict(str,wave_entry_data)
+                            music_name = wave_entry_data["file"].replace("#","")
+                            if wave_entry_data["name"] != "": music_name = wave_entry_data["name"]
+                            if wave_entry_data["author"] != "": author = f"by {wave_entry_data["author"]}"
+                            else: author = ""
+                            music = f"{music_name} {author}"
+                            mfilename = wave_entry_data["file"].replace("#","")
+                        file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
+                        if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
+                        md_wavesets += f"{ICON_MUSIC} {music.replace("_","\\_")} {file}  \n"
+                    
+                    if wave_entry == "xp":
+                        md_wavesets += f"Wave XP: {wave_entry_data}  \n"
+
+                    if wave_entry == "cash":
+                        md_wavesets += f"Wave cash: ${wave_entry_data}  \n"
+                    
+                    if wave_entry == "setup":
+                        md_wavesets += f"Setup time: {util.as_duration(wave_entry_data)}  \n"
+                    
+                    continue
+
+                count = "always 1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
+                npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
+
+                npc_name = npc_data.name
+                npc_name_prefix = ""
+
+                # Health data
+                """
+                bool carrier = data[0] == 'R';
+                bool elite = !carrier && data[0];
+                """
+                extra_info = ""
+                if "health" in wave_entry_data:
+                    extra_info += f" {wave_entry_data["health"]}HP"
+                else:
+                    if type(npc_data.health) == dict:
+                        if "data" in wave_entry_data:
+                            data_key = wave_entry_data["data"]
+                            # vars
+                            carrier = data_key[0] == "R"
+                            elite = (not carrier) and data_key[0] # If first char isn't R but data exists
+
+                            if carrier: data_key = "carrier"
+                            elif elite: data_key = "elite"
+                            else: data_key = "default";npc_name_prefix="!c"
+
+                            if data_key not in npc_data.health and "any" in npc_data.health: data_key = "any";
+                            elif data_key not in npc_data.health: data_key = "default";
+
+                            npc_name_prefix += wave_entry_data["data"].capitalize()
+                            util.debug(f"Parsing HP Value {npc_data.health} DATA value {wave_entry_data["data"]} CHOSEN value {data_key}", "npc", "OKCYAN")
+                            h = f" {npc_data.health[data_key.lower()]}"
+                        else:
+                            h = npc_data.health["default"]
+                        extra_info += f" {h}HP"
+                    else:
+                        extra_info += f" {npc_data.health}"
+                
+                # Show NPC Flags
+                for flag in npc_data.flags:
+                    if flag != "0" and flag != "-1":
+                        extra_info += f" {FLAG_MAPPINGS[flag]}"
+                
+                # Show if NPC is scaled
+                if "force_scaling" in wave_entry_data:
+                    if wave_entry_data["force_scaling"]=="1":
+                        extra_info += " _(forcibly scaled)_"
+                
+
+                # Get icon
+                if npc_data.icon!="":
+                    npc_icon_key = "leaderboard_class_"+npc_data.icon+".vtf"
+                    npc_png_icon_path = f"repo_img/{npc_data.icon}.png"
+                    
+                    # Paths to look in for icons
+                    npc_icon_path = f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}"
+                    raw_npc_icon_path = f"./TF2-Zombie-Riot/dev_files_donot_use_for_server/hud_icons/WIP/RawClassIcons/leaderboard_class_{npc_data.icon}.png"
+                    if os.path.isfile(npc_icon_path):
+                        if not os.path.isfile(npc_png_icon_path):
+                            npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
+                            npc_icon.save(npc_png_icon_path)
+                        image = util.md_img(npc_png_icon_path,"A")
+                    elif os.path.isfile(raw_npc_icon_path):
+                        if not os.path.isfile(npc_png_icon_path): # Local testing has persistent env
+                            os.rename(raw_npc_icon_path, npc_png_icon_path)
+                        image = util.md_img(npc_png_icon_path,"C")
+                    elif os.path.isfile(npc_png_icon_path): # Local testing has persistent env
+                        image = util.md_img(npc_png_icon_path,"D")
+                    else:
+                        image = util.md_img("./builtin_img/missing.png","E")
+                else:
+                    image = util.md_img("./builtin_img/missing.png","F")
+
+                # Add NPC to wave data                
+                if npc_data.category != "Type_Hidden":
+                    md_wavesets += f"{count} {image} {npc_name_prefix} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}) {extra_info}  \n"
+                    # Add NPC if not hidden & doesn't exist already
+                    md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image})
+                else:
+                    md_wavesets += f"{count} {image} {npc_name_prefix} {npc_name} {extra_info}  \n"
+        
+        waveset_cache[name] = md_wavesets
+        return md_wavesets, md_npc
+    
+    def parse_waveset_list_cfg_common(cfg, cfg_name, md_npc, md_mapsets):
+        map_mode = "Custom" in cfg # Is map specific config?
+        WAVESET_LIST = cfg[list(cfg.keys())[0]] # data of cfg file
+        if "Setup" in WAVESET_LIST: WAVESET_LIST = WAVESET_LIST["Setup"] # map-specific configs start with custom instead of setup, requiring an extra step to get to waveset/wave< data
+
+        MARKDOWN_WAVESETS = f"Starting cash: ${WAVESET_LIST["cash"]}  \n"
+        
+        if "Waves" in WAVESET_LIST: # list of wavesets
             wavesets = WAVESET_LIST["Waves"]
-        else: # Assume data being in the cfg file itself. See: maps/zr_bossrush.cfg
-            wavesets = WAVESET_LIST
+            # Outline
+            if len(wavesets)>1:
+                MARKDOWN_WAVESETS += "# Wavesets  \n"
+                for waveset_name in wavesets:
+                    MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
 
-        MARKDOWN_WAVESETS = f"Starting cash: ${WAVESET_LIST["cash"]}  \n{"# Wavesets"*int(not map_mode)}  \n"
-        if not map_mode:
+            # Modifier outline
+            if "Modifiers" in WAVESET_LIST:
+                MARKDOWN_WAVESETS += f"# Modifiers  \n"
+                for modifiers in WAVESET_LIST["Modifiers"]:
+                    MARKDOWN_WAVESETS += f"- [{modifiers}](#{util.to_section_link(modifiers)})  \n"    
+            
+            # Data
             for waveset_name in wavesets:
-                MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
-        else:
-            n = cfg.split("/")[-1].replace(".cfg","")
-            md_mapsets += f"- [{n}]({n})  \n"
-        
-        if "Modifiers" in WAVESET_LIST:
-            MARKDOWN_WAVESETS += f"# Modifiers  \n"
-            for modifiers in WAVESET_LIST["Modifiers"]:
-                MARKDOWN_WAVESETS += f"- [{modifiers}](#{util.to_section_link(modifiers)})  \n"    
-        
-        for waveset_name in wavesets:
-            self_destruct = False
-            if "file" in wavesets[waveset_name]:
                 waveset_file = wavesets[waveset_name]["file"]
                 util.log(f"    {waveset_name}{" "*(35-len(waveset_name))}| {waveset_file}")
                 wave_cfg = util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{waveset_file}.cfg")
@@ -395,166 +562,64 @@ def parse():
                 else:
                     desc = ""
                 MARKDOWN_WAVESETS += f"# {waveset_name}  \n{"[Back to top](#wavesets)  \n" * int(not map_mode)}{desc}  \n"
-            else:
-                self_destruct = True
-                WAVESET_DATA = wavesets
-            
-            wd = defaultdict(str,WAVESET_DATA)
-            a_npc = f"NPC Author{"s" * int("," in wd["author_npcs"])}: {wd["author_npcs"]}  \n" if wd["author_npcs"] != "" else ""
-            a_format = f"Format Author{"s" * int("," in wd["author_format"])}: {wd["author_format"]}  \n" if wd["author_format"] != "" else ""
-            a_raid = f"Raid Author{"s" * int("," in wd["author_raid"])}: {wd["author_raid"]}  \n" if wd["author_raid"] != "" else ""
-            MARKDOWN_WAVESETS += f"{a_npc}{a_format}{a_raid}"
-            
-            for wave in WAVESET_DATA:
-                wave_data = WAVESET_DATA[wave]
-                try:
-                    int(wave) # Check if key can be converted to a number to detect wave notation
-                except ValueError:
-                    if wave.startswith("music_"):
-                        wave_data = defaultdict(str,wave_data)
-                        music_case = wave.split("_")[1].capitalize()
-                        name = wave_data["file"].replace("#","")
-                        if wave_data["name"] != "": name = wave_data["name"]
-                        if wave_data["author"] != "": author = f"by {wave_data["author"]}"
-                        else: author = ""
-                        music = f"{name} {author}"
-                        mfilename = wave_data["file"].replace("#","")
-                        if mfilename == "vo/null.mp3": continue
-                        file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
-                        if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
-                        MARKDOWN_WAVESETS += f"{ICON_MUSIC} **{music_case}:** {music} {file}  \n"
-                    continue
-                if len(wave_data)==0: continue
-                MARKDOWN_WAVESETS += f"## {wave}  \n"
-                for wave_entry in wave_data:
-                    wave_entry_data = wave_data[wave_entry]
-                    try:
-                        float(wave_entry)
-                    except ValueError:
-                        if wave_entry.startswith("music_"):
-                            icon = util.md_img(BUILTIN_IMG+"music.svg","M2")
-                            if type(wave_entry_data) == str:
-                                mfilename = wave_entry_data.replace("#","")
-                                music = mfilename
-                                try: int(wave_entry_data); continue # skip if not actual music entry e.g. "music_outro_duration"	"65"
-                                except ValueError: pass
-                            else:
-                                wave_entry_data = defaultdict(str,wave_entry_data)
-                                name = wave_entry_data["file"].replace("#","")
-                                if wave_entry_data["name"] != "": name = wave_entry_data["name"]
-                                if wave_entry_data["author"] != "": author = f"by {wave_entry_data["author"]}"
-                                else: author = ""
-                                music = f"{name} {author}"
-                                mfilename = wave_entry_data["file"].replace("#","")
-                            file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
-                            if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
-                            MARKDOWN_WAVESETS += f"{ICON_MUSIC} {music.replace("_","\\_")} {file}  \n"
-                        continue
-                    count = "always 1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
-                    npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
 
-                    npc_name = npc_data.name
-                    npc_name_prefix = ""
-
-                    # Health data
-                    """
-                    bool carrier = data[0] == 'R';
-                    bool elite = !carrier && data[0];
-                    """
-                    extra_info = ""
-                    if "health" in wave_entry_data:
-                        extra_info += f" {wave_entry_data["health"]}HP"
-                    else:
-                        if type(npc_data.health) == dict:
-                            if "data" in wave_entry_data:
-                                data_key = wave_entry_data["data"]
-                                # vars
-                                carrier = data_key[0] == "R"
-                                elite = (not carrier) and data_key[0] # If first char isn't R but data exists
-
-                                if carrier: data_key = "carrier"
-                                elif elite: data_key = "elite"
-                                else: data_key = "default";npc_name_prefix="!c"
-
-                                if data_key not in npc_data.health and "any" in npc_data.health: data_key = "any";
-                                elif data_key not in npc_data.health: data_key = "default";
-
-                                npc_name_prefix += wave_entry_data["data"].capitalize()
-                                util.debug(f"Parsing HP Value {npc_data.health} DATA value {wave_entry_data["data"]} CHOSEN value {data_key}", "npc", "OKCYAN")
-                                h = f" {npc_data.health[data_key.lower()]}"
-                            else:
-                                h = npc_data.health["default"]
-                            extra_info += f" {h}HP"
-                        else:
-                            extra_info += f" {npc_data.health}"
-                    
-                    # Show NPC Flags
-                    for flag in npc_data.flags:
-                        if flag != "0" and flag != "-1":
-                            extra_info += f" {FLAG_MAPPINGS[flag]}"
-                    
-                    # Show if NPC is scaled
-                    if "force_scaling" in wave_entry_data:
-                        if wave_entry_data["force_scaling"]=="1":
-                            extra_info += " _(forcibly scaled)_"
-                    
-
-                    # Get icon
-                    if npc_data.icon!="":
-                        npc_icon_key = "leaderboard_class_"+npc_data.icon+".vtf"
-                        npc_png_icon_path = f"repo_img/{npc_data.icon}.png"
-                        
-                        # Paths to look in for icons
-                        npc_icon_path = f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}"
-                        raw_npc_icon_path = f"./TF2-Zombie-Riot/dev_files_donot_use_for_server/hud_icons/WIP/RawClassIcons/leaderboard_class_{npc_data.icon}.png"
-                        if os.path.isfile(npc_icon_path):
-                            if not os.path.isfile(npc_png_icon_path):
-                                npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
-                                npc_icon.save(npc_png_icon_path)
-                            image = util.md_img(npc_png_icon_path,"A")
-                        elif os.path.isfile(raw_npc_icon_path):
-                            if not os.path.isfile(npc_png_icon_path): # Local testing has persistent env
-                                os.rename(raw_npc_icon_path, npc_png_icon_path)
-                            image = util.md_img(npc_png_icon_path,"C")
-                        elif os.path.isfile(npc_png_icon_path): # Local testing has persistent env
-                            image = util.md_img(npc_png_icon_path,"D")
-                        else:
-                            image = util.md_img("./builtin_img/missing.png","E")
-                    else:
-                        image = util.md_img("./builtin_img/missing.png","F")
-
-                    # Add NPC to wave data                
-                    if npc_data.category != "Type_Hidden":
-                        MARKDOWN_WAVESETS += f"{count} {image} {npc_name_prefix} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}) {extra_info}  \n"
-                        # Add NPC if not hidden & doesn't exist already
-                        if wave_entry_data["plugin"] not in added_npc_ids:
-                            added_npc_ids.append(wave_entry_data["plugin"])
-                            if type(npc_data.health) == dict:
-                                npc_health = ""
-                                for k,v in npc_data.health.items():
-                                    npc_health += f"{k.capitalize()}: {v}HP"
-                            else:
-                                npc_health = f"Default health: {npc_data.health}  \n" if npc_data.health != "" else ""
-                            npc_cat = f"Category: {npc_data.category}  \n" if npc_data.category != "" else ""
-                            if "0" not in npc_data.flags and "-1" not in npc_data.flags:
-                                npc_flags = "Flags: "
-                                dflags = ", ".join([FLAG_MAPPINGS[item] for item in npc_data.flags])
-                                npc_flags += dflags + "  \n"
-                            else:
-                                npc_flags = ""
-                            md_npc += f"# {image.replace("16","32")} {npc_name}  \n_{wave_entry_data["plugin"]}_  \n{npc_health}{npc_flags}{npc_data.description}  \n"
-                    else:
-                        MARKDOWN_WAVESETS += f"{count} {image} {npc_name} {extra_info}  \n"
-
-            if self_destruct: break
-
+                MARKDOWN_WAVESETS, md_npc = parse_waveset(waveset_file, WAVESET_DATA, MARKDOWN_WAVESETS, md_npc)
+        else: # Waveset itself / map_mode | Assume data being in the cfg file itself. See: maps/zr_bossrush.cfg
+            # mapset, i.e. only one waveset
+            # also add link to its config file in md_mapsets (mapset outline in home.md and sidebar.md)
+            MARKDOWN_WAVESETS, md_npc = parse_waveset(cfg_name, WAVESET_LIST, MARKDOWN_WAVESETS, md_npc)
+            n = cfg_name.split("/")[-1].replace(".cfg","")
+            md_mapsets += f"- [{n}]({n})  \n"
+        
+        # Modifiers title and desc
         if "Modifiers" in WAVESET_LIST:
             for modifier in WAVESET_LIST["Modifiers"]:
                 data = WAVESET_LIST["Modifiers"][modifier]
                 desc = PHRASES_NPC_2[data["desc"]]["en"].replace("\\n","  \n")
                 MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
+        
+        return MARKDOWN_WAVESETS, md_npc, md_mapsets
 
-        if map_mode:
+    def parse_waveset_list_cfg(cfg, md_npc, md_mapsets):
+        WAVESET_LIST = KeyValues1.parse(util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{cfg}"))
+        WAVESET_TYPE = list(WAVESET_LIST.keys())[0]
+
+        if WAVESET_TYPE not in ["Setup", "Custom"]: # Unsupported waveset cfg (Rogue, Bunker, etc.)
+            util.log(f"Unsupported waveset cfg {cfg}!","WARNING")
+            return md_npc, md_mapsets
+        
+        util.log(f"Parsing waveset list cfg: {cfg}")
+
+        """
+        Special waveset support:
+        - [ ] Betting
+
+        unlikely
+        - [ ] Rogue
+        - [ ] Construction
+        - [ ] Dungeon
+
+
+        
+        maps/zr_bunker_old_fish.cfg - currently disabled in zr and has missing files
+        maps/zr_beastrooms.cfg - empty
+        maps/zr_integratedstrategies.cfg - rogue
+        maps/zr_deepforest.cfg - rogue
+        maps/zr_construction.cfg - construction
+        maps/zr_const2_headquarters.cfg - dungeon
+        maps/zr_bettingwars.cfg - betting/freeplay: delay defines budget/describes how powerful the NPCs are
+        maps/zr_holdout.cfg - construction
+        maps/zr_rift_between_fates.cfg - rogue
+        """
+
+        if WAVESET_TYPE in ["Setup", "Custom"]:
+            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_waveset_list_cfg_common(WAVESET_LIST, cfg, md_npc, md_mapsets)
+        elif WAVESET_TYPE == "Betting":
+            MARKDOWN_WAVESETS = "Bettingwars / Freeplay" # TODO
+        else:
+            MARKDOWN_WAVESETS = f"err key {WAVESET_TYPE}"
+
+        if WAVESET_TYPE in ["Custom", "Betting"]:
             filename = cfg.split("/")[-1].replace(".cfg","") + ".md"
             display_name = filename
         else:
@@ -565,8 +630,6 @@ def parse():
         generated_files[filename] = display_name
         util.write(filename, MARKDOWN_WAVESETS)
         return md_npc, md_mapsets
-
-    # TODO: Special waveset support e.g. rogue or construction
 
     # NPC list is global to prevent duplicates
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
