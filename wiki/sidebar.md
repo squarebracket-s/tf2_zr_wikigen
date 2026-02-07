@@ -1,5 +1,6 @@
  **General**
- - [Items](Items)
+ - [Item list](Items)
+ - [Item data](Item_Data)
  - [Weapon Enhancements](Weapon_Paps)
  - [NPC List](NPCs)
  - [Skilltree](Skilltree)

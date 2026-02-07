@@ -144,10 +144,15 @@ def parse():
             if description.startswith("-"): description=" - "+description[1:]
         else: description = ""
 
+        if "level" in weapon_data:
+            lvl = f"Level: {weapon_data["level"]}  \n"
+        else:
+            lvl = ""
+
         pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
         header = f"{" "*(depth+1)} {util.to_file_link(weapon_name, "Item_Data", weapon_name)}  \n"
         
-        return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{description}  \n{pap_links}  ", header, pap_md, gtags
+        return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{level}{description}  \n{pap_links}  ", header, pap_md, gtags
 
 
     def item_block(key,data,depth,markdown,markdown_header,markdown_pap,tags):
@@ -158,16 +163,16 @@ def parse():
             for item in data:
                 item_data = data[item]
                 if is_trophy(item_data):
-                    markdown_header += f"{" "*(depth+2)}Trophy: {item}  \n"
+                    markdown_header += f"{" "*(depth+1)}{item}  \n" # Trophy:
                 elif is_weapon(item_data):
                     m, mh, mp, tags = parse_weapon_data(item,item_data,depth,tags)
                     markdown += m
                     markdown_header += mh
                     markdown_pap += mp
-                elif item[0].isupper() and is_category(item_data) or "Perks" in item or "Trophies"==item: # unneeded data is always lowercase...
+                elif item[0].isupper() and is_category(item_data) or "Perks" in item: # unneeded data is always lowercase...
                     markdown, markdown_header, markdown_pap, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
                 elif "whiteout" in item_data:
-                    markdown_header += f"{" "*(depth+2)}Info: {item}  \n"
+                    markdown_header += f"{" "*(depth+1)}{item}  \n" # Info:
         return markdown, markdown_header, markdown_pap, tags
 
 
