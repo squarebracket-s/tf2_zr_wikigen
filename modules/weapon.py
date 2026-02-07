@@ -152,7 +152,7 @@ def parse():
         pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
         header = f"{" "*(depth+1)} {util.to_file_link(weapon_name, "Item_Data", weapon_name)}  \n"
         
-        return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{level}{description}  \n{pap_links}  ", header, pap_md, gtags
+        return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{lvl}{description}  \n{pap_links}  ", header, pap_md, gtags
 
 
     def item_block(key,data,depth,markdown,markdown_header,markdown_pap,tags):
