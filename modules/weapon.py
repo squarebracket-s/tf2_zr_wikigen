@@ -58,7 +58,7 @@ class WeaponPap:
         return f"### {space_header} {self.name} \\[{self.id}\\]  \n{tags}{space}${self.cost}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n{space}{extra_desc.replace("\\n",f"  \n{space}")}  \n"
     
     def to_link(self):
-        return f"{" "*self.depth}[{self.name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Weapon_Paps#{util.to_section_link(self.name,self.depth>0)}-{self.id})  \n"
+        return f"{" "*self.depth}{util.to_file_link(self.name, "Weapon_Paps", f"{self.name}-{self.id}", self.depth>0)}  \n"
 
 class WeaponPap_Dummy:
     def __init__(self, init_pap_paths):
@@ -70,6 +70,7 @@ def parse():
     util.log("Parsing Weapon List...")
 
     MARKDOWN_WEAPON = ""
+    MARKDOWN_WEAPON_HEADERS = ""
     MARKDOWN_WEAPON_PAP = ""
     
     def is_item_category(c):
@@ -108,11 +109,14 @@ def parse():
                     if pd.pappaths!="0": md, links = item_block(pd, idx+int(pd.papskip), md, links,depth+1)
             return md, links
         
-        pap_md += f"# {weapon_name}  \n[Back to weapon](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/Items#{util.to_section_link(weapon_name)})  \n"
+        pap_md += f"# {weapon_name}  \n{util.to_file_link("Back to weapon", "Item_Data", weapon_name)}  \n"
         if "pappaths" in weapon_data: init_pap_paths = weapon_data["pappaths"]
         else: init_pap_paths = 1
         pap_links = "**Paps**  \n"
         pap_md, pap_links = item_block(WeaponPap_Dummy(init_pap_paths), pap_idx, pap_md, pap_links, 0)
+        if pap_links == "**Paps**  \n":
+            pap_md = ""
+            pap_links = ""
         return pap_md, pap_links
 
 
@@ -141,40 +145,45 @@ def parse():
         else: description = ""
 
         pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
+        header = f"{" "*(depth+1)} {util.to_file_link(weapon_name, "Item_Data", weapon_name)}  \n"
         
-        return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{description}  \n{pap_links}  ", pap_md, gtags
+        return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{description}  \n{pap_links}  ", header, pap_md, gtags
 
 
-    def item_block(key,data,depth,markdown,markdown_pap,tags):
+    def item_block(key,data,depth,markdown,markdown_header,markdown_pap,tags):
         if "hidden" not in data:
             depth += 1
             markdown += f"#{"#"*depth} {key}  \n"
+            markdown_header += f"{" "*depth} {key}  \n"
             for item in data:
                 item_data = data[item]
                 if is_trophy(item_data):
-                    markdown += f"Trophy: {item}  \n"
+                    markdown_header += f"{" "*(depth+2)}Trophy: {item}  \n"
                 elif is_weapon(item_data):
-                    m1, m2, tags = parse_weapon_data(item,item_data,depth,tags)
-                    markdown += m1
-                    markdown_pap += m2
+                    m, mh, mp, tags = parse_weapon_data(item,item_data,depth,tags)
+                    markdown += m
+                    markdown_header += mh
+                    markdown_pap += mp
                 elif item[0].isupper() and is_category(item_data) or "Perks" in item or "Trophies"==item: # unneeded data is always lowercase...
-                    markdown, markdown_pap, tags = item_block(item, item_data, depth, markdown, markdown_pap, tags)
+                    markdown, markdown_header, markdown_pap, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
                 elif "whiteout" in item_data:
-                    markdown += f"Info: {item}  \n"
-        return markdown, markdown_pap, tags
+                    markdown_header += f"{" "*(depth+2)}Info: {item}  \n"
+        return markdown, markdown_header, markdown_pap, tags
 
 
     tags = []
     for item_category in CFG_WEAPONS:
         if is_item_category(CFG_WEAPONS[item_category]):
-            MARKDOWN_WEAPON, MARKDOWN_WEAPON_PAP, tags = item_block(item_category,CFG_WEAPONS[item_category],0,MARKDOWN_WEAPON,MARKDOWN_WEAPON_PAP, tags)
+            MARKDOWN_WEAPON, MARKDOWN_WEAPON_HEADERS, MARKDOWN_WEAPON_PAP, tags = item_block(item_category,CFG_WEAPONS[item_category],0,MARKDOWN_WEAPON,MARKDOWN_WEAPON_HEADERS,MARKDOWN_WEAPON_PAP, tags)
     
     taglist_str = "  \n".join({f" - #{tag}" for tag in tags})
     MARKDOWN_WEAPON = f"**Available tags:** \n{taglist_str}  \n"+MARKDOWN_WEAPON
 
-    util.write("items.md", MARKDOWN_WEAPON)
+    util.write("items.md", MARKDOWN_WEAPON_HEADERS)
+    util.write("item_data.md", MARKDOWN_WEAPON)
     util.write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
     return {
         "items.md": "Items.md",
+        "item_data.md": "Item_Data.md",
         "weapon_paps.md": "Weapon_Paps.md"
     }

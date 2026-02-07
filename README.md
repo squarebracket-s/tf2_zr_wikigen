@@ -8,7 +8,7 @@ Script that utilises code from https://github.com/artvin01/TF2-Zombie-Riot to ge
   - [x] Parsing multiple configs
   - [x] List config modifiers
   - [x] Map-specific wavesets
-  - [ ] Support special wavesets like rogue or construction
+  - [ ] Special wavesets
     - [ ] Rogue
     - [ ] Construction
     - [ ] Dungeon

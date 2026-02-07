@@ -362,7 +362,7 @@ def parse():
     def parse_waveset(name, data, md_wavesets, md_npc):
         global waveset_cache
         if name in waveset_cache:
-            util.log(f"    -> Returning cache for {name}")
+            util.debug(f"    -> Returning cache for {name}", "waveset", "OKCYAN")
             md_wavesets += waveset_cache[name]
             return md_wavesets, md_npc
         
@@ -511,7 +511,7 @@ def parse():
 
                 # Add NPC to wave data                
                 if npc_data.category != "Type_Hidden":
-                    md_wavesets += f"{count} {image} {npc_name_prefix} [{npc_name}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/NPCs#{"-"+npc_name.lower().replace(" ","-").replace(",","")}) {extra_info}  \n"
+                    md_wavesets += f"{count} {image} {npc_name_prefix} {util.to_file_link(npc_name,"NPCs",npc_name,True)} {extra_info}  \n"
                     # Add NPC if not hidden & doesn't exist already
                     md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image})
                 else:

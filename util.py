@@ -16,6 +16,11 @@ CATEGORIES = []
 if "DEBUG" in os.environ:
     CATEGORIES = [x.lower() for x in os.environ["DEBUG"].split(",")]
 
+SCOPE = []
+if "SCOPE" in os.environ:
+    SCOPE = [x.lower() for x in os.environ["SCOPE"].split(",")]
+else:
+    SCOPE = ["waveset", "items", "skilltree"]
 
 def id_from_str(string):
     # https://stackoverflow.com/questions/49808639/generate-a-variable-length-hash
@@ -33,6 +38,9 @@ def to_section_link(str_, pre_h=False):
     for r in remove:
         str_ = str_.replace(r,"")
     return f"{"-"*int(pre_h)}{str_.lower().replace(" ","-")}"
+
+def to_file_link(display, file, header, pre_h=False):
+    return f"[{display}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/{file}#{to_section_link(header)})"
 
 
 def md_img(url, alt, width=16):

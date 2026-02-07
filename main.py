@@ -1,14 +1,18 @@
 import os, util
 
-util.log("Importing modules...")
-import modules.weapon
-import modules.wavesets
-import modules.skilltree
 
 WIKI_FILES = {}
-WIKI_FILES = modules.wavesets.parse() | WIKI_FILES # Merges WIKI_FILES dict with those of the wavesets module
-WIKI_FILES = modules.weapon.parse() | WIKI_FILES
-WIKI_FILES = modules.skilltree.parse() | WIKI_FILES
+if "waveset" in util.SCOPE:
+    import modules.wavesets
+    WIKI_FILES = modules.wavesets.parse() | WIKI_FILES # Merges WIKI_FILES dict with those of the wavesets module
+
+if "items" in util.SCOPE:
+    import modules.weapon
+    WIKI_FILES = modules.weapon.parse() | WIKI_FILES
+
+if "skilltree" in util.SCOPE:
+    import modules.skilltree
+    WIKI_FILES = modules.skilltree.parse() | WIKI_FILES
 
 # Move files to wiki
 if os.path.isdir("tf2_zr_wikigen.wiki/"):
