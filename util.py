@@ -40,7 +40,7 @@ def to_section_link(str_, pre_h=False):
     return f"{"-"*int(pre_h)}{str_.lower().replace(" ","-")}"
 
 def to_file_link(display, file, header, pre_h=False):
-    return f"[{display}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/{file}#{to_section_link(header)})"
+    return f"[{display}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/{file}#{to_section_link(header,pre_h)})"
 
 
 def md_img(url, alt, width=16):
