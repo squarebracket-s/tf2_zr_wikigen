@@ -171,6 +171,8 @@ def parse():
                     markdown_pap += mp
                 elif item[0].isupper() and is_category(item_data) or "Perks" in item: # unneeded data is always lowercase...
                     markdown, markdown_header, markdown_pap, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
+                elif "Trophies" == item:
+                    _, markdown_header, markdown_pap, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
                 elif "whiteout" in item_data:
                     markdown_header += f"{" "*(depth+1)}{item}  \n" # Info:
         return markdown, markdown_header, markdown_pap, tags
