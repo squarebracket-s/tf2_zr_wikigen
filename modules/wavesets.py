@@ -357,7 +357,7 @@ def parse():
     
     def parse_waveset(name, data, md_wavesets, md_npc):
         global waveset_cache
-        if name in waveset_cache:
+        if name in waveset_cache and False:
             util.debug(f"    -> Returning cache for {name}", "waveset", "OKCYAN")
             md_wavesets += waveset_cache[name]
             return md_wavesets, md_npc
