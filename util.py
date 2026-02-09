@@ -1,4 +1,5 @@
 import hashlib, os, datetime
+from collections import defaultdict
 
 # https://stackoverflow.com/questions/3768895/how-to-make-a-class-json-serializable
 # Allow classes to define __json__ to be JSON serializable
@@ -20,7 +21,7 @@ SCOPE = []
 if "SCOPE" in os.environ:
     SCOPE = [x.lower() for x in os.environ["SCOPE"].split(",")]
 else:
-    SCOPE = ["waveset", "items", "skilltree"]
+    SCOPE = ["wavesets", "items", "skilltree"]
 
 def id_from_str(string):
     # https://stackoverflow.com/questions/49808639/generate-a-variable-length-hash
@@ -78,6 +79,25 @@ def as_duration(str_):
     return f'{dm}{ds}'
 
 
+def music_modal(wave_entry_data):
+    if type(wave_entry_data) == str:
+        mfilename = wave_entry_data.replace("#","")
+        music = mfilename
+        try: int(wave_entry_data); return None # skip if not actual music entry e.g. "music_outro_duration"	"65"
+        except ValueError: pass
+    else:
+        wave_entry_data = defaultdict(str,wave_entry_data)
+        music_name = wave_entry_data["file"].replace("#","")
+        if wave_entry_data["name"] != "": music_name = wave_entry_data["name"]
+        if wave_entry_data["author"] != "": author = f"by {wave_entry_data["author"]}"
+        else: author = ""
+        music = f"{music_name} {author}"
+        mfilename = wave_entry_data["file"].replace("#","")
+    file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
+    if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
+    return f"{ICON_MUSIC} {music.replace("_","\\_")} {file}  \n"
+
+
 def debug(str_, category, color="OKGREEN"):
     if category in CATEGORIES: log(str_,color)
 
@@ -130,3 +150,8 @@ def write(filename, val):
     with open(filename, 'w+') as f:
         f.write(str(val))
     return True
+
+BUILTIN_IMG = "https://raw.githubusercontent.com/squarebracket-s/tf2_zr_wikigen/refs/heads/main/builtin_img/"
+ICON_DOWNLOAD = md_img(BUILTIN_IMG+"download.svg", "download")
+ICON_X_SQUARE = md_img(BUILTIN_IMG+"x-square.svg","cross")
+ICON_MUSIC = md_img(BUILTIN_IMG+"music.svg","music")

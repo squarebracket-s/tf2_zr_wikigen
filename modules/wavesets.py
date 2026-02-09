@@ -5,10 +5,6 @@ from keyvalues1 import KeyValues1
 # https://stackoverflow.com/questions/2082152/how-to-make-a-case-insensitive-dictionary
 from requests.structures import CaseInsensitiveDict
 
-BUILTIN_IMG = "https://raw.githubusercontent.com/squarebracket-s/tf2_zr_wikigen/refs/heads/main/builtin_img/"
-ICON_DOWNLOAD = util.md_img(BUILTIN_IMG+"download.svg", "download")
-ICON_X_SQUARE = util.md_img(BUILTIN_IMG+"x-square.svg","cross")
-ICON_MUSIC = util.md_img(BUILTIN_IMG+"music.svg","music")
 FLAG_MAPPINGS = {
     "MVM_CLASS_FLAG_NONE": "",
     "MVM_CLASS_FLAG_NORMAL": "Normal",
@@ -380,18 +376,7 @@ def parse():
                 int(wave)
             except ValueError:
                 if wave.startswith("music_"):
-                    wave_data = defaultdict(str,wave_data)
-                    music_case = wave.split("_")[1].capitalize()
-                    music_name = wave_data["file"].replace("#","")
-                    if wave_data["name"] != "": music_name = wave_data["name"]
-                    if wave_data["author"] != "": author = f"by {wave_data["author"]}"
-                    else: author = ""
-                    music = f"{music_name} {author}"
-                    mfilename = wave_data["file"].replace("#","")
-                    if mfilename == "vo/null.mp3": continue
-                    file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
-                    if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
-                    md_wavesets += f"{ICON_MUSIC} **{music_case}:** {music} {file}  \n"
+                    if (mdata := util.music_modal(wave_data)): md_wavesets += mdata
                 continue
 
             wave_npc_amt = sum([int(util.is_float(entry)) for entry in wave_data])
@@ -407,23 +392,7 @@ def parse():
                     float(wave_entry)
                 except ValueError:
                     if wave_entry.startswith("music_"):
-                        icon = util.md_img(BUILTIN_IMG+"music.svg","M2")
-                        if type(wave_entry_data) == str:
-                            mfilename = wave_entry_data.replace("#","")
-                            music = mfilename
-                            try: int(wave_entry_data); continue # skip if not actual music entry e.g. "music_outro_duration"	"65"
-                            except ValueError: pass
-                        else:
-                            wave_entry_data = defaultdict(str,wave_entry_data)
-                            music_name = wave_entry_data["file"].replace("#","")
-                            if wave_entry_data["name"] != "": music_name = wave_entry_data["name"]
-                            if wave_entry_data["author"] != "": author = f"by {wave_entry_data["author"]}"
-                            else: author = ""
-                            music = f"{music_name} {author}"
-                            mfilename = wave_entry_data["file"].replace("#","")
-                        file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
-                        if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
-                        md_wavesets += f"{ICON_MUSIC} {music.replace("_","\\_")} {file}  \n"
+                        if (mdata := util.music_modal(wave_entry_data)): md_wavesets += mdata
                     
                     if wave_entry == "xp":
                         md_wavesets += f"Wave XP: {wave_entry_data}  \n"

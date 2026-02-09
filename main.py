@@ -2,7 +2,7 @@ import os, util
 
 
 WIKI_FILES = {}
-if "waveset" in util.SCOPE:
+if "wavesets" in util.SCOPE:
     import modules.wavesets
     WIKI_FILES = modules.wavesets.parse() | WIKI_FILES # Merges WIKI_FILES dict with those of the wavesets module
 
