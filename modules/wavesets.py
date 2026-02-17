@@ -357,17 +357,18 @@ def parse():
     
     def parse_waveset(name, data, md_wavesets, md_npc):
         global waveset_cache
-        if name in waveset_cache and False:
+        if name in waveset_cache:
             util.debug(f"    -> Returning cache for {name}", "waveset", "OKCYAN")
             md_wavesets += waveset_cache[name]
             return md_wavesets, md_npc
         
         wd = defaultdict(str,data)
+        md_new = ""
         a_npc = f"NPC Author{"s" * int("," in wd["author_npcs"])}: {wd["author_npcs"]}  \n" if wd["author_npcs"] != "" else ""
         a_format = f"Format Author{"s" * int("," in wd["author_format"])}: {wd["author_format"]}  \n" if wd["author_format"] != "" else ""
         a_raid = f"Raid Author{"s" * int("," in wd["author_raid"])}: {wd["author_raid"]}  \n" if wd["author_raid"] != "" else ""
         complete_item = f"Item on win: {wd["complete_item"]}  \n" if wd["complete_item"] != "" else ""
-        md_wavesets += f"{a_npc}{a_format}{a_raid}{complete_item}"
+        md_new += f"{a_npc}{a_format}{a_raid}{complete_item}"
         
         wave_idx = 0
         for wave in data:
@@ -376,7 +377,7 @@ def parse():
                 int(wave)
             except ValueError:
                 if wave.startswith("music_"):
-                    if (mdata := util.music_modal(wave_data)): md_wavesets += mdata
+                    if (mdata := util.music_modal(wave_data)): md_new += mdata
                 continue
 
             wave_npc_amt = sum([int(util.is_float(entry)) for entry in wave_data])
@@ -385,23 +386,23 @@ def parse():
 
             abovelimit = False if "fakemaxwaves" not in wd else wave_idx > int(wd["fakemaxwaves"])
 
-            md_wavesets += f"## {wave_idx}  \n" # marking in headers does not work in github markdown!! TODO
+            md_new += f"## {wave_idx}  \n" # marking in headers does not work in github markdown!! TODO
             for wave_entry in wave_data:
                 wave_entry_data = wave_data[wave_entry]
                 try:
                     float(wave_entry)
                 except ValueError:
                     if wave_entry.startswith("music_"):
-                        if (mdata := util.music_modal(wave_entry_data)): md_wavesets += mdata
+                        if (mdata := util.music_modal(wave_entry_data)): md_new += mdata
                     
                     if wave_entry == "xp":
-                        md_wavesets += f"Wave XP: {wave_entry_data}  \n"
+                        md_new += f"Wave XP: {wave_entry_data}  \n"
 
                     if wave_entry == "cash":
-                        md_wavesets += f"Wave cash: ${wave_entry_data}  \n"
+                        md_new += f"Wave cash: ${wave_entry_data}  \n"
                     
                     if wave_entry == "setup":
-                        md_wavesets += f"Setup time: {util.as_duration(wave_entry_data)}  \n"
+                        md_new += f"Setup time: {util.as_duration(wave_entry_data)}  \n"
                     
                     continue
 
@@ -480,13 +481,14 @@ def parse():
 
                 # Add NPC to wave data                
                 if npc_data.category != "Type_Hidden":
-                    md_wavesets += f"{count} {image} {npc_name_prefix} {util.to_file_link(npc_name,"NPCs",npc_name,True)} {extra_info}  \n"
+                    md_new += f"{count} {image} {npc_name_prefix} {util.to_file_link(npc_name,"NPCs",npc_name,True)} {extra_info}  \n"
                     # Add NPC if not hidden & doesn't exist already
                     md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image})
                 else:
-                    md_wavesets += f"{count} {image} {npc_name_prefix} {npc_name} {extra_info}  \n"
+                    md_new += f"{count} {image} {npc_name_prefix} {npc_name} {extra_info}  \n"
         
-        waveset_cache[name] = md_wavesets
+        waveset_cache[name] = md_new
+        md_wavesets += md_new
         return md_wavesets, md_npc
     
     def parse_waveset_list_cfg_common(cfg, cfg_name, md_npc, md_mapsets):
