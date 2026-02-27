@@ -30,9 +30,11 @@ class NPC:
         if ("npc_donoteveruse" not in self.file_data and "NPC_Add" in self.file_data):
 
             # Get NPC name
+            # TODO multi-npc files can have different prefixes
             prefixes = [
                 "data",
-                "lantean_data"
+                "lantean_data",
+                "data_buffed" # addons/sourcemod/scripting/zombie_riot/npc/bonezone/wave60/npc_necromancer.sp
             ]
             self.name = None
             for prefix in prefixes:
@@ -354,106 +356,83 @@ def parse():
                 npc_flags = ""
             return f"# {data["image"].replace("16","32")} {data["name"]}  \n_{plugin}_  \n{npc_health}{npc_flags}{npc_data.description}  \n"
         return ""
-    
-    def parse_waveset(name, data, md_wavesets, md_npc):
-        global waveset_cache
-        if name in waveset_cache:
-            util.debug(f"    -> Returning cache for {name}", "waveset", "OKCYAN")
-            md_wavesets += waveset_cache[name]
-            return md_wavesets, md_npc
-        
-        wd = defaultdict(str,data)
+
+    def parse_wave(wave_data, md_npc, is_betting=False, force=False):
         md_new = ""
-        a_npc = f"NPC Author{"s" * int("," in wd["author_npcs"])}: {wd["author_npcs"]}  \n" if wd["author_npcs"] != "" else ""
-        a_format = f"Format Author{"s" * int("," in wd["author_format"])}: {wd["author_format"]}  \n" if wd["author_format"] != "" else ""
-        a_raid = f"Raid Author{"s" * int("," in wd["author_raid"])}: {wd["author_raid"]}  \n" if wd["author_raid"] != "" else ""
-        complete_item = f"Item on win: {wd["complete_item"]}  \n" if wd["complete_item"] != "" else ""
-        md_new += f"{a_npc}{a_format}{a_raid}{complete_item}"
-        
-        wave_idx = 0
-        for wave in data:
-            wave_data = data[wave]
+        for wave_entry in wave_data:
+            wave_entry_data = wave_data[wave_entry]
             try:
-                int(wave)
+                float(wave_entry)
             except ValueError:
-                if wave.startswith("music_"):
-                    if (mdata := util.music_modal(wave_data)): md_new += mdata
+                if wave_entry.startswith("music_"):
+                    if (mdata := util.music_modal(wave_entry_data)): md_new += mdata
+                
+                if wave_entry == "xp":
+                    md_new += f"Wave XP: {wave_entry_data}  \n"
+
+                if wave_entry == "cash":
+                    md_new += f"Wave cash: ${wave_entry_data}  \n"
+                
+                if wave_entry == "setup":
+                    md_new += f"Setup time: {util.as_duration(wave_entry_data)}  \n"
+                
                 continue
 
-            wave_npc_amt = sum([int(util.is_float(entry)) for entry in wave_data])
-            if len(wave_data)==0 or wave_npc_amt == 0: continue
-            wave_idx += 1
-
-            abovelimit = False if "fakemaxwaves" not in wd else wave_idx > int(wd["fakemaxwaves"])
-
-            md_new += f"## {wave_idx}  \n" # marking in headers does not work in github markdown!! TODO
-            for wave_entry in wave_data:
-                wave_entry_data = wave_data[wave_entry]
-                try:
-                    float(wave_entry)
-                except ValueError:
-                    if wave_entry.startswith("music_"):
-                        if (mdata := util.music_modal(wave_entry_data)): md_new += mdata
-                    
-                    if wave_entry == "xp":
-                        md_new += f"Wave XP: {wave_entry_data}  \n"
-
-                    if wave_entry == "cash":
-                        md_new += f"Wave cash: ${wave_entry_data}  \n"
-                    
-                    if wave_entry == "setup":
-                        md_new += f"Setup time: {util.as_duration(wave_entry_data)}  \n"
-                    
-                    continue
-
-                count = "always 1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
+            count = "always 1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
+            budget = f"${int(float(wave_entry))} " if is_betting else "" # int("1.0") -> ValueError | int(float("1.0")) -> 1
+            
+            if wave_entry_data["plugin"] in NPCS_BY_FILENAME:
                 npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
+            else:
+                npc_data = None
+                assert force
 
+            try:
                 npc_name = npc_data.name
-                npc_name_prefix = ""
+            except AttributeError:
+                npc_name = wave_entry_data["plugin"]
+            npc_name_prefix = ""
 
-                # Health data
-                """
-                bool carrier = data[0] == 'R';
-                bool elite = !carrier && data[0];
-                """
-                extra_info = ""
-                if "health" in wave_entry_data:
-                    extra_info += f" {wave_entry_data["health"]}HP"
-                else:
-                    if type(npc_data.health) == dict:
-                        if "data" in wave_entry_data:
-                            data_key = wave_entry_data["data"]
-                            # vars
-                            carrier = data_key[0] == "R"
-                            elite = (not carrier) and data_key[0] # If first char isn't R but data exists
+            # Health data
+            """
+            bool carrier = data[0] == 'R';
+            bool elite = !carrier && data[0];
+            """
+            extra_info = ""
+            if "health" in wave_entry_data:
+                extra_info += f" {wave_entry_data["health"]}HP"
+            elif npc_data:
+                if type(npc_data.health) == dict:
+                    if "data" in wave_entry_data:
+                        data_key = wave_entry_data["data"]
+                        # vars
+                        carrier = data_key[0] == "R"
+                        elite = (not carrier) and data_key[0] # If first char isn't R but data exists
 
-                            if carrier: data_key = "carrier"
-                            elif elite: data_key = "elite"
-                            else: data_key = "default";npc_name_prefix="!c"
+                        if carrier: data_key = "carrier"
+                        elif elite: data_key = "elite"
+                        else: data_key = "default";npc_name_prefix="!c"
 
-                            if data_key not in npc_data.health and "any" in npc_data.health: data_key = "any";
-                            elif data_key not in npc_data.health: data_key = "default";
+                        if data_key not in npc_data.health and "any" in npc_data.health: data_key = "any";
+                        elif data_key not in npc_data.health: data_key = "default";
 
-                            npc_name_prefix += wave_entry_data["data"].capitalize()
-                            util.debug(f"Parsing HP Value {npc_data.health} DATA value {wave_entry_data["data"]} CHOSEN value {data_key}", "npc", "OKCYAN")
-                            h = f" {npc_data.health[data_key.lower()]}"
-                        else:
-                            h = npc_data.health["default"]
-                        extra_info += f" {h}HP"
+                        npc_name_prefix += wave_entry_data["data"].capitalize()
+                        util.debug(f"Parsing HP Value {npc_data.health} DATA value {wave_entry_data["data"]} CHOSEN value {data_key}", "npc", "OKCYAN")
+                        h = f" {npc_data.health[data_key.lower()]}"
                     else:
-                        extra_info += f" {npc_data.health}"
-                
-                # Show NPC Flags
+                        h = npc_data.health["default"]
+                    extra_info += f" {h}HP"
+                else:
+                    extra_info += f" {npc_data.health}"
+            else:
+                extra_info += " ?HP"
+            
+            # Show NPC Flags
+            display_name = npc_name
+            if npc_data:
                 for flag in npc_data.flags:
                     if flag != "0" and flag != "-1":
                         extra_info += f" {FLAG_MAPPINGS[flag]}"
-                
-                # Show if NPC is scaled
-                if "force_scaling" in wave_entry_data:
-                    if wave_entry_data["force_scaling"]=="1":
-                        extra_info += " _(forcibly scaled)_"
-                
 
                 # Get icon
                 if npc_data.icon!="":
@@ -478,20 +457,73 @@ def parse():
                         image = util.md_img("./builtin_img/missing.png","E")
                 else:
                     image = util.md_img("./builtin_img/missing.png","F")
-
-                # Add NPC to wave data                
+                
                 if npc_data.category != "Type_Hidden":
-                    md_new += f"{count} {image} {npc_name_prefix} {util.to_file_link(npc_name,"NPCs",npc_name,True)} {extra_info}  \n"
+                    display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
                     # Add NPC if not hidden & doesn't exist already
-                    md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image})
-                else:
-                    md_new += f"{count} {image} {npc_name_prefix} {npc_name} {extra_info}  \n"
+                    md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image}) 
+            else:
+                image = util.md_img("./builtin_img/missing.png","G")
+                
+
+                
+            
+            # Show if NPC is scaled
+            if "force_scaling" in wave_entry_data:
+                if wave_entry_data["force_scaling"]=="1":
+                    extra_info += " _(forcibly scaled)_"
+
+            # Add NPC to wave data   
+            md_new += f"{budget} {count} {image} {npc_name_prefix} {display_name} {extra_info}  \n"
+        
+        return md_new, md_npc
+    
+    def parse_waveset(name, data, md_wavesets, md_npc):
+        global waveset_cache
+        if name in waveset_cache:
+            util.debug(f"    -> Returning cache for {name}", "waveset", "OKCYAN")
+            md_wavesets += waveset_cache[name]
+            return md_wavesets, md_npc
+        
+        wd = defaultdict(str,data)
+        md_new = ""
+        a_npc = f"NPCs by: {wd["author_npcs"]}  \n" if wd["author_npcs"] != "" else ""
+        a_format = f"Format by: {wd["author_format"]}  \n" if wd["author_format"] != "" else ""
+        a_raid = f"Raidboss by: {wd["author_raid"]}  \n" if wd["author_raid"] != "" else ""
+        complete_item = f"Item on win: {wd["complete_item"]}  \n" if wd["complete_item"] != "" else ""
+        md_new += f"{a_npc}{a_format}{a_raid}{complete_item}"
+        
+        wave_idx = 0
+        for wave in data:
+            wave_data = data[wave]
+            try:
+                int(wave)
+            except ValueError:
+                if wave.startswith("music_"):
+                    if (mdata := util.music_modal(wave_data)): md_new += mdata
+                continue
+
+            wave_npc_amt = sum([int(util.is_float(entry)) for entry in wave_data])
+            if len(wave_data)==0 or wave_npc_amt == 0: continue
+            wave_idx += 1
+
+            abovelimit = False if "fakemaxwaves" not in wd else wave_idx > int(wd["fakemaxwaves"]) # If wave number is above specified max fake limit
+
+            mn, md_npc = parse_wave(wave_data, md_npc)
+            md_new += f"## {wave_idx}  \n{mn}" # marking in headers does not work in github markdown!! TODO
         
         waveset_cache[name] = md_new
         md_wavesets += md_new
         return md_wavesets, md_npc
     
-    def parse_waveset_list_cfg_common(cfg, cfg_name, md_npc, md_mapsets):
+    def parse_betting(name, data, md_npc):
+        wd = defaultdict(str,data)
+        betting_music = util.music_modal(data["Betting"]["BetWars"]["music_background"])
+        mn, md_npc = parse_wave(data["Betting"]["Waves"]["Freeplay"], md_npc, is_betting=True, force=True)
+        
+        return f"{betting_music}\n  {mn}", md_npc
+    
+    def parse_waveset_list_cfg_common(cfg, filename, md_npc, md_mapsets):
         map_mode = "Custom" in cfg # Is map specific config?
         WAVESET_LIST = cfg[list(cfg.keys())[0]] # data of cfg file
         if "Setup" in WAVESET_LIST: WAVESET_LIST = WAVESET_LIST["Setup"] # map-specific configs start with custom instead of setup, requiring an extra step to get to waveset/wave< data
@@ -525,11 +557,10 @@ def parse():
 
                 if "desc" in wavesets[waveset_name]:
                     waveset_desc_key = wavesets[waveset_name]["desc"]
-                    # Blame artvin PR #895 for not translating a desc
                     if waveset_desc_key in PHRASES_WAVESET:
                         desc = PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")
                     else:
-                        desc = waveset_desc_key.replace("\\n","  \n")
+                        desc = waveset_desc_key.replace("\\n","  \n") # Blame Artvin PR #895 for not translating a desc
                 else:
                     desc = ""
                 MARKDOWN_WAVESETS += f"# {waveset_name}  \n{"[Back to top](#wavesets)  \n" * int(not map_mode)}{desc}  \n"
@@ -538,10 +569,10 @@ def parse():
         else: # Waveset itself / map_mode | Assume data being in the cfg file itself. See: maps/zr_bossrush.cfg
             # mapset, i.e. only one waveset
             # also add link to its config file in md_mapsets (mapset outline in home.md and sidebar.md)
-            MARKDOWN_WAVESETS, md_npc = parse_waveset(cfg_name, WAVESET_LIST, MARKDOWN_WAVESETS, md_npc)
+            MARKDOWN_WAVESETS, md_npc = parse_waveset(filename, WAVESET_LIST, MARKDOWN_WAVESETS, md_npc)
         
         if map_mode: 
-            n = cfg_name.split("/")[-1].replace(".cfg","")
+            n = filename.split("/")[-1].replace(".cfg","")
             md_mapsets += f"- [{n}]({n})  \n"
         
         # Modifiers title and desc
@@ -553,27 +584,25 @@ def parse():
         
         return MARKDOWN_WAVESETS, md_npc, md_mapsets
 
-    def parse_waveset_list_cfg(cfg, md_npc, md_mapsets):
-        WAVESET_LIST = KeyValues1.parse(util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{cfg}"))
-        WAVESET_TYPE = list(WAVESET_LIST.keys())[0]
+    def parse_waveset_list_cfg(filename, md_npc, md_mapsets):
+        WAVESETLIST_DATA = KeyValues1.parse(util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{filename}"))
+        WAVESETLIST_TYPE = list(WAVESETLIST_DATA.keys())[0]
 
-        if WAVESET_TYPE not in ["Setup", "Custom"]: # Unsupported waveset cfg (Rogue, Bunker, etc.)
-            util.log(f"Unsupported waveset cfg {cfg}!","WARNING")
+        if WAVESETLIST_TYPE not in ["Setup", "Custom", "Betting"]: # Unsupported waveset cfg (Rogue, Bunker, etc.)
+            util.log(f"Unsupported waveset cfg {filename}!","WARNING")
             return md_npc, md_mapsets
         
-        util.log(f"Parsing waveset list cfg: {cfg}")
+        util.log(f"Parsing waveset list cfg: {filename}")
 
         """
         Special waveset support:
         - [ ] Betting
 
-        unlikely
+        Unlikely:
         - [ ] Rogue
         - [ ] Construction
         - [ ] Dungeon
 
-
-        
         maps/zr_bunker_old_fish.cfg - currently disabled in zr and has missing files
         maps/zr_beastrooms.cfg - empty
         maps/zr_integratedstrategies.cfg - rogue
@@ -585,27 +614,30 @@ def parse():
         maps/zr_rift_between_fates.cfg - rogue
         """
 
-        if WAVESET_TYPE in ["Setup", "Custom"]:
-            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_waveset_list_cfg_common(WAVESET_LIST, cfg, md_npc, md_mapsets)
-        elif WAVESET_TYPE == "Betting":
-            MARKDOWN_WAVESETS = "Bettingwars / Freeplay" # TODO
+        if WAVESETLIST_TYPE in ["Setup", "Custom"]:
+            # TODO global MARKDOWN_WAVESETS
+            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, md_npc, md_mapsets)
+        elif WAVESETLIST_TYPE == "Betting":
+            MARKDOWN_WAVESETS, md_npc = parse_betting(filename, WAVESETLIST_DATA, md_npc)
         else:
-            MARKDOWN_WAVESETS = f"err key {WAVESET_TYPE}"
+            MARKDOWN_WAVESETS = f"err key {WAVESETLIST_TYPE}"
 
-        if WAVESET_TYPE in ["Custom", "Betting"]:
-            filename = cfg.split("/")[-1].replace(".cfg","") + ".md"
-            display_name = filename
+        if WAVESETLIST_TYPE in ["Custom", "Betting"]:
+            filename_md = filename.split("/")[-1].replace(".cfg","") + ".md"
+            display_name = filename_md
         else:
-            filename = f"wavesets_{cfg}.md".replace("/","_")
-            disp = cfg.replace(".cfg","").replace("_"," ").replace("/"," ")
+            filename_md = f"wavesets_{filename}.md".replace("/","_")
+            disp = filename.replace(".cfg","").replace("_"," ").replace("/"," ")
             disp_title = disp.replace("'","~").title().replace("~","'") # https://stackoverflow.com/a/1549644
             display_name = f"{disp_title}.md"
-        generated_files[filename] = display_name
-        util.write(filename, MARKDOWN_WAVESETS)
+        
+        generated_files[filename_md] = display_name
+        util.write(filename_md, MARKDOWN_WAVESETS)
         return md_npc, md_mapsets
 
     # NPC list is global to prevent duplicates
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
+    # TODO what the hell. make this global
     MARKDOWN_NPCS = ""
     MARKDOWN_MAPSETS = "\n**Map-specific wavesets**  \n"
     added_npc_ids = []
