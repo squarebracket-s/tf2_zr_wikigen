@@ -516,12 +516,15 @@ def parse():
         md_wavesets += md_new
         return md_wavesets, md_npc
     
-    def parse_betting(name, data, md_npc):
+    def parse_betting(name, data, md_npc, md_mapsets):
         wd = defaultdict(str,data)
         betting_music = util.music_modal(data["Betting"]["BetWars"]["music_background"])
         mn, md_npc = parse_wave(data["Betting"]["Waves"]["Freeplay"], md_npc, is_betting=True, force=True)
+
+        n = name.split("/")[-1].replace(".cfg","")
+        md_mapsets += f"- [{n}]({n})  \n"
         
-        return f"{betting_music}\n  {mn}", md_npc
+        return f"{betting_music}\n  {mn}", md_npc, md_mapsets
     
     def parse_waveset_list_cfg_common(cfg, filename, md_npc, md_mapsets):
         map_mode = "Custom" in cfg # Is map specific config?
@@ -596,7 +599,7 @@ def parse():
 
         """
         Special waveset support:
-        - [ ] Betting
+        - [x] Betting
 
         Unlikely:
         - [ ] Rogue
@@ -618,7 +621,7 @@ def parse():
             # TODO global MARKDOWN_WAVESETS
             MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, md_npc, md_mapsets)
         elif WAVESETLIST_TYPE == "Betting":
-            MARKDOWN_WAVESETS, md_npc = parse_betting(filename, WAVESETLIST_DATA, md_npc)
+            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_DATA, md_npc, md_mapsets)
         else:
             MARKDOWN_WAVESETS = f"err key {WAVESETLIST_TYPE}"
 
