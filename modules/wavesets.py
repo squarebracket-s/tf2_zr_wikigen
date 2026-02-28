@@ -476,7 +476,7 @@ def parse():
             if is_betting:
                 md_new += f"| {budget} | {count} {image} {npc_name_prefix} {display_name} {extra_info} |  \n"
             else:
-                md_new += f"{budget} {count} {image} {npc_name_prefix} {display_name} {extra_info}  \n"
+                md_new += f"{count} {image} {npc_name_prefix} {display_name} {extra_info}  \n"
         
         return md_new, md_npc
     
