@@ -23,7 +23,7 @@ jobs:
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
         git clone https://github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
-        rm -r ./tf2_zr_wikigen.wiki/repo_img/
+        rm -rf ./tf2_zr_wikigen.wiki/repo_img/
         rm -r ./tf2_zr_wikigen.wiki/builtin_img/
         rm -r ./tf2_zr_wikigen.wiki/*.md
 
