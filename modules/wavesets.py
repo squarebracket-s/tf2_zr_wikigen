@@ -359,6 +359,8 @@ def parse():
 
     def parse_wave(wave_data, md_npc, is_betting=False, force=False):
         md_new = ""
+        if is_betting:
+            md_new = "| Budget | NPC |\n| --- | --- |\n"
         for wave_entry in wave_data:
             wave_entry_data = wave_data[wave_entry]
             try:
@@ -379,7 +381,7 @@ def parse():
                 continue
 
             count = "always 1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
-            budget = f"${int(float(wave_entry))} " if is_betting else "" # int("1.0") -> ValueError | int(float("1.0")) -> 1
+            budget = f"{int(float(wave_entry))}" # int("1.0") -> ValueError | int(float("1.0")) -> 1 (only considered budget if it's betting. else it's delay in-wave)
             
             if wave_entry_data["plugin"] in NPCS_BY_FILENAME:
                 npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
@@ -471,7 +473,10 @@ def parse():
                     extra_info += " _(forcibly scaled)_"
 
             # Add NPC to wave data   
-            md_new += f"{budget} {count} {image} {npc_name_prefix} {display_name} {extra_info}  \n"
+            if is_betting:
+                md_new += f"| {budget} | {count} {image} {npc_name_prefix} {display_name} {extra_info} |  \n"
+            else:
+                md_new += f"{budget} {count} {image} {npc_name_prefix} {display_name} {extra_info}  \n"
         
         return md_new, md_npc
     
@@ -521,7 +526,7 @@ def parse():
         n = name.split("/")[-1].replace(".cfg","")
         md_mapsets += f"- [{n}]({n})  \n"
         
-        return f"{betting_music}\n  {mn}", md_npc, md_mapsets
+        return f"{betting_music}\n  Higher budget means more powerful NPC group\n  {mn}", md_npc, md_mapsets
     
     def parse_waveset_list_cfg_common(cfg, filename, md_npc, md_mapsets):
         map_mode = "Custom" in cfg # Is map specific config?
