@@ -428,6 +428,7 @@ def parse():
                 extra_info += " ?HP"
             
             # Show NPC Flags
+            # TODO some icons missing even tho they exist
             display_name = npc_name
             if npc_data:
                 for flag in npc_data.flags:
@@ -441,29 +442,26 @@ def parse():
                     
                     # Paths to look in for icons
                     npc_icon_path = f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}"
-                    raw_npc_icon_path = f"./TF2-Zombie-Riot/dev_files_donot_use_for_server/hud_icons/WIP/RawClassIcons/leaderboard_class_{npc_data.icon}.png"
+                    premedia_npc_icon_path = f"./premedia_icons/{npc_data.icon}.png"
                     if os.path.isfile(npc_icon_path):
-                        if not os.path.isfile(npc_png_icon_path):
-                            npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
-                            npc_icon.save(npc_png_icon_path)
+                        if False:
+                            if not os.path.isfile(npc_png_icon_path):
+                                npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
+                                npc_icon.save(npc_png_icon_path)
                         image = util.md_img(npc_png_icon_path,"A")
-                    elif os.path.isfile(raw_npc_icon_path):
-                        if not os.path.isfile(npc_png_icon_path): # Local testing has persistent env
-                            os.rename(raw_npc_icon_path, npc_png_icon_path)
-                        image = util.md_img(npc_png_icon_path,"C")
-                    elif os.path.isfile(npc_png_icon_path): # Local testing has persistent env
-                        image = util.md_img(npc_png_icon_path,"D")
+                    elif os.path.isfile(premedia_npc_icon_path):
+                        image = util.md_img(premedia_npc_icon_path,"B")
                     else:
-                        image = util.md_img("./builtin_img/missing.png","E")
+                        image = util.md_img("./builtin_img/missing.png","C")
                 else:
-                    image = util.md_img("./builtin_img/missing.png","F")
+                    image = util.md_img("./builtin_img/missing.png","D")
                 
                 if npc_data.category != "Type_Hidden":
                     display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
                     # Add NPC if not hidden & doesn't exist already
                     md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image}) 
             else:
-                image = util.md_img("./builtin_img/missing.png","G")
+                image = util.md_img("./builtin_img/missing.png","E")
                 
 
                 
