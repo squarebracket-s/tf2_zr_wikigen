@@ -25,6 +25,7 @@ jobs:
         git clone https://github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
         rm -rf ./tf2_zr_wikigen.wiki/repo_img/
         rm -r ./tf2_zr_wikigen.wiki/builtin_img/
+        rm -rf ./tf2_zr_wikigen.wiki/premedia_icons/
         rm -r ./tf2_zr_wikigen.wiki/*.md
 
     - name: Parse ZR repo code
@@ -34,6 +35,7 @@ jobs:
       run: |
         mv repo_img/ ./tf2_zr_wikigen.wiki/repo_img/
         mv builtin_img/ ./tf2_zr_wikigen.wiki/builtin_img/
+        mv premedia_icons/ ./tf2_zr_wikigen.wiki/premedia_icons/
 
     - name: Push to wiki
       run: |
