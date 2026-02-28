@@ -444,10 +444,9 @@ def parse():
                     npc_icon_path = f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}"
                     premedia_npc_icon_path = f"./premedia_icons/{npc_data.icon}.png"
                     if os.path.isfile(npc_icon_path):
-                        if False:
-                            if not os.path.isfile(npc_png_icon_path):
-                                npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
-                                npc_icon.save(npc_png_icon_path)
+                        if not os.path.isfile(npc_png_icon_path):
+                            npc_icon = vtf2img.Parser(f"./TF2-Zombie-Riot/materials/hud/{npc_icon_key}").get_image()
+                            npc_icon.save(npc_png_icon_path)
                         image = util.md_img(npc_png_icon_path,"A")
                     elif os.path.isfile(premedia_npc_icon_path):
                         image = util.md_img(premedia_npc_icon_path,"B")
