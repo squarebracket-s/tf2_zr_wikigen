@@ -25,7 +25,7 @@ jobs:
         git clone https://github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
         rm -rf ./tf2_zr_wikigen.wiki/repo_img/
         rm -r ./tf2_zr_wikigen.wiki/builtin_img/
-        rm -rf ./tf2_zr_wikigen.wiki/premedia_icons/
+        rm -r ./tf2_zr_wikigen.wiki/premedia_icons/
         rm -r ./tf2_zr_wikigen.wiki/*.md
 
     - name: Parse ZR repo code
@@ -41,6 +41,6 @@ jobs:
       run: |
         cd tf2_zr_wikigen.wiki
         git add .
-        git commit -m "Generate Wiki [$GITHUB_SHA]"
+        git commit -m "Generate Wiki [ https://github.com/squarebracket-s/tf2_zr_wikigen/commit/$GITHUB_SHA ]"
         git remote set-url origin https://x-access-token:${{ secrets.WIKI_PAT }}@github.com/squarebracket-s/tf2_zr_wikigen.wiki.git
         git push origin master
