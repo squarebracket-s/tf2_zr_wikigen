@@ -529,9 +529,10 @@ def parse():
         return f"{betting_music}\n  Higher budget means more powerful NPC group\n  {mn}", md_npc, md_mapsets
     
     def parse_waveset_list_cfg_common(cfg, filename, md_npc, md_mapsets):
-        map_mode = "Custom" in cfg # Is map specific config?
+        map_mode = "maps" in filename # Is map specific config?
         WAVESET_LIST = cfg[list(cfg.keys())[0]] # data of cfg file
         if "Setup" in WAVESET_LIST: WAVESET_LIST = WAVESET_LIST["Setup"] # map-specific configs start with custom instead of setup, requiring an extra step to get to waveset/wave< data
+        if "Setup" in WAVESET_LIST: WAVESET_LIST = WAVESET_LIST["Setup"] # zr_bossrush
 
         MARKDOWN_WAVESETS = f"Starting cash: ${WAVESET_LIST["cash"]}  \n"
         
@@ -554,6 +555,7 @@ def parse():
                 waveset_file = wavesets[waveset_name]["file"]
                 util.log(f"    {waveset_name}{" "*(35-len(waveset_name))}| {waveset_file}")
                 wave_cfg = util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{waveset_file}.cfg")
+                
                 # Waveset-specific typo fixes (or just removing lines that break the parser)
                 if waveset_file == "classic_iber&expi": wave_cfg=wave_cfg.replace('			"plugin"	"110000000"',"") # overrides actual plugin name before it, which is why it has to be removed
                 wave_cfg = unique_enemy_delays(wave_cfg)
@@ -565,15 +567,19 @@ def parse():
                     if waveset_desc_key in PHRASES_WAVESET:
                         desc = PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")
                     else:
+                        util.log(f"'{waveset_desc_key}' has no translation! {filename}", "WARNING")
                         desc = waveset_desc_key.replace("\\n","  \n") # Blame Artvin PR #895 for not translating a desc
                 else:
                     desc = ""
+                util.debug(f"Adding waveset {waveset_name} to {filename}","wavesets","OKCYAN")
                 MARKDOWN_WAVESETS += f"# {waveset_name}  \n{"[Back to top](#wavesets)  \n" * int(not map_mode)}{desc}  \n"
-
+                lb = len(MARKDOWN_WAVESETS)
                 MARKDOWN_WAVESETS, md_npc = parse_waveset(waveset_file, WAVESET_DATA, MARKDOWN_WAVESETS, md_npc)
+                util.debug(f"{filename} waveset markdown lendiff {abs(len(MARKDOWN_WAVESETS)-lb)}","wavesets","OKCYAN")
         else: # Waveset itself / map_mode | Assume data being in the cfg file itself. See: maps/zr_bossrush.cfg
             # mapset, i.e. only one waveset
             # also add link to its config file in md_mapsets (mapset outline in home.md and sidebar.md)
+            # might be unused at the moment
             MARKDOWN_WAVESETS, md_npc = parse_waveset(filename, WAVESET_LIST, MARKDOWN_WAVESETS, md_npc)
         
         if map_mode: 
@@ -597,7 +603,7 @@ def parse():
             util.log(f"Unsupported waveset cfg {filename}!","WARNING")
             return md_npc, md_mapsets
         
-        util.log(f"Parsing waveset list cfg: {filename}")
+        util.log(f"Parsing waveset list cfg: {filename} | Is map? {"maps" in filename}")
 
         """
         Special waveset support:
@@ -626,8 +632,9 @@ def parse():
             MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_DATA, md_npc, md_mapsets)
         else:
             MARKDOWN_WAVESETS = f"err key {WAVESETLIST_TYPE}"
+            util.log("UNSUPPORTED CFG IN OUTPUT!", "FAIL")
 
-        if WAVESETLIST_TYPE in ["Custom", "Betting"]:
+        if "maps" in filename:
             filename_md = filename.split("/")[-1].replace(".cfg","") + ".md"
             display_name = filename_md
         else:
