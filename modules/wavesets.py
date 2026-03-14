@@ -518,7 +518,8 @@ def parse():
         md_wavesets += md_new
         return md_wavesets, md_npc
     
-    def parse_betting(name, data, md_npc, md_mapsets):
+    def parse_betting(name, data_raw, md_npc, md_mapsets):
+        data = KeyValues1.parse(unique_enemy_delays(data_raw))
         wd = defaultdict(str,data)
         betting_music = util.music_modal(data["Betting"]["BetWars"]["music_background"])
         mn, md_npc = parse_wave(data["Betting"]["Waves"]["Freeplay"], md_npc, is_betting=True, force=True)
@@ -599,7 +600,8 @@ def parse():
         if (filename not in util.FILESCOPE) and len(util.FILESCOPE)>0:
             util.log(f"{filename} not in FILESCOPE", "OKBLUE")
             return md_npc, md_mapsets
-        WAVESETLIST_DATA = KeyValues1.parse(util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{filename}"))
+        WAVESETLIST_RAW = util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{filename}")
+        WAVESETLIST_DATA = KeyValues1.parse(WAVESETLIST_RAW)
         WAVESETLIST_TYPE = list(WAVESETLIST_DATA.keys())[0]
 
         if WAVESETLIST_TYPE not in ["Setup", "Custom", "Betting"]: # Unsupported waveset cfg (Rogue, Bunker, etc.)
@@ -632,7 +634,7 @@ def parse():
             # TODO global MARKDOWN_WAVESETS
             MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, md_npc, md_mapsets)
         elif WAVESETLIST_TYPE == "Betting":
-            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_DATA, md_npc, md_mapsets)
+            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_RAW, md_npc, md_mapsets)
         else:
             MARKDOWN_WAVESETS = f"err key {WAVESETLIST_TYPE}"
             util.log("UNSUPPORTED CFG IN OUTPUT!", "FAIL")
