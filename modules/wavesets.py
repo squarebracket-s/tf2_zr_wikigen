@@ -379,7 +379,7 @@ def parse():
                     md_new += f"Setup time: {util.as_duration(wave_entry_data)}  \n"
                 
                 continue
-
+            print(wave_entry)
             count = "always 1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
             budget = f"{int(float(wave_entry))}" # int("1.0") -> ValueError | int(float("1.0")) -> 1 (only considered budget if it's betting. else it's delay in-wave)
             
@@ -596,6 +596,9 @@ def parse():
         return MARKDOWN_WAVESETS, md_npc, md_mapsets
 
     def parse_waveset_list_cfg(filename, md_npc, md_mapsets):
+        if (filename not in util.FILESCOPE) and len(util.FILESCOPE)>0:
+            util.log(f"{filename} not in FILESCOPE", "OKBLUE")
+            return md_npc, md_mapsets
         WAVESETLIST_DATA = KeyValues1.parse(util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{filename}"))
         WAVESETLIST_TYPE = list(WAVESETLIST_DATA.keys())[0]
 

@@ -23,6 +23,14 @@ if "SCOPE" in os.environ:
 else:
     SCOPE = ["wavesets", "items", "skilltree"]
 
+FILESCOPE = []
+if "FILESCOPE" in os.environ:
+    FILESCOPE = [x.lower() for x in os.environ["FILESCOPE"].split(",")]
+
+print("CATEGORIES",CATEGORIES)
+print("SCOPE",SCOPE)
+print("FILESCOPE",FILESCOPE)
+
 def id_from_str(string):
     # https://stackoverflow.com/questions/49808639/generate-a-variable-length-hash
     return hashlib.shake_256(string.encode("utf-8")).hexdigest(2)
