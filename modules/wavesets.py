@@ -668,9 +668,9 @@ def parse():
     NPCS_BY_FILENAME = parse_all_npcs()
 
     cfg_files = {
-        "classic.cfg": "zr_survival.md",
-        "fastmode.cfg": "zr_raidrush.md",
-        "fastmode_redsun.cfg": "zr_raidrush_redsun.md", 
+        "classic.cfg": "ZR: Survival.md",
+        "fastmode.cfg": "ZR: Raidrush.md",
+        "fastmode_redsun.cfg": "ZR: Raidrush (redsun.tf).md", 
     }
     for file in os.listdir("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/maps/"):
         if ".cfg" in file:
