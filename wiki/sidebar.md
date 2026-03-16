@@ -5,8 +5,7 @@
  - [NPC List](NPCs)
  - [Skilltree](Skilltree)
   
- **Server Configs**
- - [Classic](Classic)
- - [Fastmode](Fastmode)
- - [redsun.tf Fastmode](Fastmode-Redsun)
- 
+ **Gamemodes**
+ - [ZR: Survival](zr_surv)
+ - [ZR: Raidrush](zr_raidrush)
+ - [ZR: Raidrush (redsun.tf)](zr_raidrush_redsun)

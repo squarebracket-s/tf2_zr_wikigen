@@ -379,7 +379,7 @@ def parse():
                     md_new += f"Setup time: {util.as_duration(wave_entry_data)}  \n"
                 
                 continue
-            print(wave_entry)
+            
             count = "always 1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
             budget = f"{int(float(wave_entry))}" # int("1.0") -> ValueError | int(float("1.0")) -> 1 (only considered budget if it's betting. else it's delay in-wave)
             
@@ -596,7 +596,7 @@ def parse():
         
         return MARKDOWN_WAVESETS, md_npc, md_mapsets
 
-    def parse_waveset_list_cfg(filename, md_npc, md_mapsets):
+    def parse_waveset_list_cfg(filename, md_npc, md_mapsets, filename_md=None):
         if (filename not in util.FILESCOPE) and len(util.FILESCOPE)>0:
             util.log(f"{filename} not in FILESCOPE", "OKBLUE")
             return md_npc, md_mapsets
@@ -639,14 +639,17 @@ def parse():
             MARKDOWN_WAVESETS = f"err key {WAVESETLIST_TYPE}"
             util.log("UNSUPPORTED CFG IN OUTPUT!", "FAIL")
 
-        if "maps" in filename:
-            filename_md = filename.split("/")[-1].replace(".cfg","") + ".md"
-            display_name = filename_md
+        if not filename_md:
+            if "maps" in filename:
+                filename_md = filename.split("/")[-1].replace(".cfg","") + ".md"
+                display_name = filename_md
+            else:
+                filename_md = f"wavesets_{filename}.md".replace("/","_")
+                disp = filename.replace(".cfg","").replace("_"," ").replace("/"," ")
+                disp_title = disp.replace("'","~").title().replace("~","'") # https://stackoverflow.com/a/1549644
+                display_name = f"{disp_title}.md"
         else:
-            filename_md = f"wavesets_{filename}.md".replace("/","_")
-            disp = filename.replace(".cfg","").replace("_"," ").replace("/"," ")
-            disp_title = disp.replace("'","~").title().replace("~","'") # https://stackoverflow.com/a/1549644
-            display_name = f"{disp_title}.md"
+            display_name = filename_md
         
         generated_files[filename_md] = display_name
         util.write(filename_md, MARKDOWN_WAVESETS)
@@ -664,17 +667,17 @@ def parse():
     util.log("Parsing NPCs...")
     NPCS_BY_FILENAME = parse_all_npcs()
 
-    cfg_files = [
-        "classic.cfg",
-        "fastmode.cfg",
-        "fastmode_redsun.cfg", 
-    ]
+    cfg_files = {
+        "classic.cfg": "zr_survival.md",
+        "fastmode.cfg": "zr_raidrush.md",
+        "fastmode_redsun.cfg": "zr_raidrush_redsun.md", 
+    }
     for file in os.listdir("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/maps/"):
         if ".cfg" in file:
-            cfg_files.append(f"maps/{file}")
+            cfg_files[f"maps/{file}"] = None
 
-    for f in cfg_files:
-        MARKDOWN_NPCS, MARKDOWN_MAPSETS = parse_waveset_list_cfg(f, MARKDOWN_NPCS, MARKDOWN_MAPSETS)
+    for f in cfg_files.keys():
+        MARKDOWN_NPCS, MARKDOWN_MAPSETS = parse_waveset_list_cfg(f, MARKDOWN_NPCS, MARKDOWN_MAPSETS, filename_md=cfg_files[f])
 
     util.write("npcs.md", MARKDOWN_NPCS)
     util.write("sidebar.md", util.read("wiki/sidebar.md")+MARKDOWN_MAPSETS)
