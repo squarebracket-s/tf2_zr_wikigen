@@ -535,7 +535,7 @@ def parse():
                     if float(percent_text).is_integer():
                         percent_text = int(percent)
 
-                    extra_info += f" {char} {percent_text}％"
+                    extra_info += f" `{char}` {percent_text}％"
 
             # Add NPC to wave data   
             if is_betting:
