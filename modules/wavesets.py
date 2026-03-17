@@ -741,7 +741,7 @@ def parse():
     COMMIT_SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
     COMMIT_SHA_SHORT = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
 
-    PARSE_RUN_INFO = f"<sub>Code parsed at {util.datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')} H:M:S D.M.Y</sub>  \n<sub>Source repository commit [artvin01/TF2-Zombie-Riot@`{COMMIT_SHA_SHORT}`](https://github.com/artvin01/TF2-Zombie-Riot/commit/{COMMIT_SHA})</sub>"
+    PARSE_RUN_INFO = f"\n<sub>Code parsed at {util.datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')} H:M:S D.M.Y UTC</sub>  \n<sub>Source repository commit [artvin01/TF2-Zombie-Riot@`{COMMIT_SHA_SHORT}`](https://github.com/artvin01/TF2-Zombie-Riot/commit/{COMMIT_SHA})</sub>"
 
     util.write("npcs.md", MARKDOWN_NPCS)
     util.write("sidebar.md", util.read("wiki/sidebar.md")+MARKDOWN_MAPSETS)
