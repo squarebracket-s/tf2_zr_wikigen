@@ -6,6 +6,6 @@
  - [Skilltree](Skilltree)
   
  **Gamemodes**
- - [ZR: Survival](ZR:-Survival)
- - [ZR: Raidrush](ZR:-Raidrush)
- - [ZR: Raidrush (redsun.tf)](ZR:-Raidrush-(redsun.tf))  
+ - [ZR: Survival](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/ZR:-Survival)
+ - [ZR: Raidrush](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/ZR:-Raidrush)
+ - [ZR: Raidrush (redsun.tf)](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/ZR:-Raidrush-(redsun.tf))  

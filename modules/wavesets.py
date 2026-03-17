@@ -12,7 +12,16 @@ FLAG_MAPPINGS = {
     "MVM_CLASS_FLAG_MISSION": "<mark>Support</mark>",
     "MVM_CLASS_FLAG_MINIBOSS": "Miniboss",
     "MVM_CLASS_FLAG_ALWAYSCRIT": "Crits",
-    "MVM_CLASS_FLAG_SUPPORT_LIMITED": "Limited Support",
+    "MVM_CLASS_FLAG_SUPPORT_LIMITED": "Limited Support"
+}
+
+PROPERTY_MAPPINGS = {
+    "is_boss": "Boss",
+    "is_outlined": "Outline",
+    "force_scaling": "ForcedScaling",
+    "is_health_scaling": "HealthScaling",
+    "is_immune_to_nuke": "NukeImmunity"
+
 }
 
 
@@ -380,8 +389,47 @@ def parse():
                 
                 continue
             
+            """
+            ? - use unknown
+            // comment from TF2-Zombie-Riot code
+            ( ) own comment
+
+            Builtin - accounted for on its own
+            Flag - self explanatory
+            Special Flag - in flag list but accounted for on its own
+            Mult - multipliers (melee res, ranged res, speed, dmg), after flag
+
+            # Wave
+            Int count => Builtin //how many of that npc spawns. note: on max player counts this number is multiplied by 4. on 4 playercount, its just this number.
+            Float delay => Hidden //setting this to "0.0" will make it wait for this npc group to die before spawning the next npc group.
+
+            # NPC
+            Int health => Flag
+            Bool is_boss => Flag //if a npc has this, they will get outlined, bonus damage, and their health scales.
+            Bool force_scaling => Flag
+            Float waiting_time_give ?
+            Bool does_not_scale (true if count <= 0) => Flag ?
+            Bool ignore_max_cap ?
+            Bool is_outlined => Flag //if the npc is outlined.
+            Bool is_health_scaling => Flag //if the npc's health should scale.
+            Bool is_immune_to_nuke => Flag //if immune to the nuke powerup drop.
+            Bool is_static ?
+            Int team_npc (default 3) => Special Flag (not in PROPERTY_MAPPINGS) //the team the npc is on. 999 = free for all. 2 = red team, aka ally.
+            Float cash => Hidden //how much cash this npc drops when it dies, note: this is now mostly redundant since raidmode can automatically calculate this. (thank god). full cash gotten = this*count.
+            Float extra_melee_res => ☛ Mult //dmg is multiplied by this. 1.0 = 0% dmg resistance, 2.0 = npc takes 2x damage. 0.5 = npc takes half dmg.
+            Float extra_ranged_res => ➶ Mult
+            Float extra_speed => ↗ Mult (unsure about this icon) //multiplies the base speed of the npc by this much.
+            Float extra_damage => ☖ Mult
+            Float extra_size => ⤡ Mult //size multi.
+            Float extra_thinkspeed ? (whatever this does is probably not important)
+            Int danger_level ? (Only used in challenges/freeplay/advanced.cfg)
+            String custom_name TODO -> Property
+            (
+            String data => Builtin (variations of the same NPC)
+            String spawn ?
+            )
+            """
             count = "always 1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
-            budget = f"{int(float(wave_entry))}" # int("1.0") -> ValueError | int(float("1.0")) -> 1 (only considered budget if it's betting. else it's delay in-wave)
             
             if wave_entry_data["plugin"] in NPCS_BY_FILENAME:
                 npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
@@ -464,17 +512,17 @@ def parse():
             else:
                 image = util.md_img("./builtin_img/missing.png","E")
                 
+            for property_, val in PROPERTY_MAPPINGS.items():
+                if property_ in wave_entry_data:
+                    if wave_entry_data[property_] == "1":
+                        extra_info += f" {val}"
 
-                
-            
-            # Show if NPC is scaled
-            if "force_scaling" in wave_entry_data:
-                if wave_entry_data["force_scaling"]=="1":
-                    extra_info += " _(forcibly scaled)_"
+            # TODO Show resistances
 
             # Add NPC to wave data   
             if is_betting:
-                md_new += f"| {budget} | {count} {image} {npc_name_prefix} {display_name} {extra_info} |  \n"
+                # For first table val: int("1.0") -> ValueError | int(float("1.0")) -> 1
+                md_new += f"| {int(float(wave_entry))} | {count} {image} {npc_name_prefix} {display_name} {extra_info} |  \n"
             else:
                 md_new += f"{count} {image} {npc_name_prefix} {display_name} {extra_info}  \n"
         
@@ -611,22 +659,14 @@ def parse():
         util.log(f"Parsing waveset list cfg: {filename} | Is map? {"maps" in filename}")
 
         """
-        Special waveset support:
-        - [x] Betting
-
-        Unlikely:
-        - [ ] Rogue
-        - [ ] Construction
-        - [ ] Dungeon
-
         maps/zr_bunker_old_fish.cfg - currently disabled in zr and has missing files
         maps/zr_beastrooms.cfg - empty
         maps/zr_integratedstrategies.cfg - rogue
         maps/zr_deepforest.cfg - rogue
         maps/zr_construction.cfg - construction
-        maps/zr_const2_headquarters.cfg - dungeon
-        maps/zr_bettingwars.cfg - betting/freeplay: delay defines budget/describes how powerful the NPCs are
-        maps/zr_holdout.cfg - construction
+        maps/zr_const2_headquarters.cfg - const2 (codename dungeon)
+        maps/zr_bettingwars.cfg - betting: delay defines budget/describes how powerful the NPCs are
+        maps/zr_holdout.cfg - const1
         maps/zr_rift_between_fates.cfg - rogue
         """
 

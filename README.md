@@ -7,15 +7,18 @@ Script that utilises code from https://github.com/artvin01/TF2-Zombie-Riot to ge
 - [x] Waveset data
   - [x] Parsing multiple configs
   - [x] List config modifiers
-  - [x] Map-specific wavesets
   - [ ] Special wavesets
-    - [ ] Rogue
-    - [ ] Construction
-    - [ ] Dungeon
-    - [x] Betting
+    - [x] ZR: Survival
+    - [x] ZR: Raidrush
+    - [ ] ZR: Rogue
+    - [ ] ZR: Construction
+        - [ ] Construction 1
+        - [ ] Construction 2
+    - [x] ZR: Special Maps
 - [x] NPC data
   - [x] Case for non-shared file with multiple NPC_Add calls
   - [x] Handle health cases like carrier?4500:(elite?5000:4000)HP, data[0]?3750:3000HP, elite?7200:5700HP
+  - [ ] Show all properties in wavesets
 - [x] Item data
   - [x] Items
   - [x] Weapon Paps
