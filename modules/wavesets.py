@@ -1,5 +1,5 @@
 # Parse all NPCs & Wavesets (Normal & Custom, wavesets like Construction are yet to be supported.)
-import util, os, pathlib, vtf2img, json
+import util, os, subprocess, pathlib, vtf2img, json
 from collections import defaultdict
 from keyvalues1 import KeyValues1
 # https://stackoverflow.com/questions/2082152/how-to-make-a-case-insensitive-dictionary
@@ -720,7 +720,7 @@ def parse():
     MARKDOWN_MAPSETS = "\n**Map-specific wavesets**  \n"
     added_npc_ids = []
 
-    if not os.path.isdir("repo_img"): os.system("mkdir repo_img")
+    if not os.path.isdir("repo_img"): subprocess.run(["mkdir", "repo_img"])
 
     util.log("Parsing NPCs...")
     NPCS_BY_FILENAME = parse_all_npcs()
@@ -737,7 +737,13 @@ def parse():
     for f in cfg_files.keys():
         MARKDOWN_NPCS, MARKDOWN_MAPSETS = parse_waveset_list_cfg(f, MARKDOWN_NPCS, MARKDOWN_MAPSETS, filename_md=cfg_files[f])
 
+    # Get current commit SHA for TF2-Zombie-Riot
+    COMMIT_SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
+    COMMIT_SHA_SHORT = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
+
+    PARSE_RUN_INFO = f"<sub>Code parsed at {util.datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')} H:M:S D.M.Y</sub>  \n<sub>Source repository commit [artvin01/TF2-Zombie-Riot@`{COMMIT_SHA_SHORT}`](https://github.com/artvin01/TF2-Zombie-Riot/commit/{COMMIT_SHA})</sub>"
+
     util.write("npcs.md", MARKDOWN_NPCS)
     util.write("sidebar.md", util.read("wiki/sidebar.md")+MARKDOWN_MAPSETS)
-    util.write("home.md", util.read("wiki/home.md")+MARKDOWN_MAPSETS)
+    util.write("home.md", util.read("wiki/home.md")+MARKDOWN_MAPSETS+PARSE_RUN_INFO)
     return generated_files
