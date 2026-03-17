@@ -18,10 +18,17 @@ FLAG_MAPPINGS = {
 PROPERTY_MAPPINGS = {
     "is_boss": "Boss",
     "is_outlined": "Outline",
-    "force_scaling": "ForcedScaling",
+    "force_scaling": "ForceScaling",
     "is_health_scaling": "HealthScaling",
     "is_immune_to_nuke": "NukeImmunity"
+}
 
+MULTIPLIER_MAPPINGS = {
+    "extra_melee_res": "☛",
+    "extra_ranged_res": "➶",
+    "extra_speed": "↗",
+    "extra_damage": "☖",
+    "extra_size": "⤡",
 }
 
 
@@ -416,12 +423,15 @@ def parse():
             Bool is_static ?
             Int team_npc (default 3) => Special Flag (not in PROPERTY_MAPPINGS) //the team the npc is on. 999 = free for all. 2 = red team, aka ally.
             Float cash => Hidden //how much cash this npc drops when it dies, note: this is now mostly redundant since raidmode can automatically calculate this. (thank god). full cash gotten = this*count.
+            
+            ％
             Float extra_melee_res => ☛ Mult //dmg is multiplied by this. 1.0 = 0% dmg resistance, 2.0 = npc takes 2x damage. 0.5 = npc takes half dmg.
             Float extra_ranged_res => ➶ Mult
             Float extra_speed => ↗ Mult (unsure about this icon) //multiplies the base speed of the npc by this much.
             Float extra_damage => ☖ Mult
             Float extra_size => ⤡ Mult //size multi.
             Float extra_thinkspeed ? (whatever this does is probably not important)
+
             Int danger_level ? (Only used in challenges/freeplay/advanced.cfg)
             String custom_name TODO -> Property
             (
@@ -517,7 +527,15 @@ def parse():
                     if wave_entry_data[property_] == "1":
                         extra_info += f" {val}"
 
-            # TODO Show resistances
+            for multiplier, char in MULTIPLIER_MAPPINGS.items():
+                if multiplier in wave_entry_data:
+                    percent = float(wave_entry_data[multiplier])*100
+
+                    percent_text = f"{percent:.2f}"
+                    if float(percent_text).is_integer():
+                        percent_text = int(percent)
+
+                    extra_info += f" {char} {percent_text}％"
 
             # Add NPC to wave data   
             if is_betting:
