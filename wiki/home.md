@@ -5,11 +5,14 @@
  - [NPC List](NPCs)
  - [Skilltree](Skilltree)
 
+ **Legend**
  - `☖` All Damage
  - `☛` Melee Damage
  - `➶` Ranged Damage
+ _Documentation only:_
  - `↗` Speed
  - `⤡` Size
+ 
  **Gamemodes**
  - [ZR: Survival](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/ZR:-Survival)
  - [ZR: Raidrush](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/ZR:-Raidrush)
