@@ -370,7 +370,7 @@ def parse():
                 npc_flags += dflags + "  \n"
             else:
                 npc_flags = ""
-            return f"# {data["image"].replace("16","32")} {data["name"]}  \n_{plugin}_  \n{npc_health}{npc_flags}{npc_data.description}  \n"
+            return f"# {data["image"].replace("16","32") if data["image"]!="" else ""} {data["name"]}  \n_{plugin}_  \n{npc_health}{npc_flags}{npc_data.description}  \n"
         return ""
 
     def parse_wave(wave_data, md_npc, is_betting=False, force=False):
@@ -511,16 +511,16 @@ def parse():
                     elif os.path.isfile(premedia_npc_icon_path):
                         image = util.md_img(premedia_npc_icon_path,"B")
                     else:
-                        image = util.md_img("./builtin_img/missing.png","C")
+                        image = "" #util.md_img("./builtin_img/missing.png","C")
                 else:
-                    image = util.md_img("./builtin_img/missing.png","D")
+                    image = "" #util.md_img("./builtin_img/missing.png","D")
                 
                 if npc_data.category != "Type_Hidden":
                     display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
                     # Add NPC if not hidden & doesn't exist already
                     md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image}) 
             else:
-                image = util.md_img("./builtin_img/missing.png","E")
+                image = "" #util.md_img("./builtin_img/missing.png","E")
                 
             for property_, val in PROPERTY_MAPPINGS.items():
                 if property_ in wave_entry_data:
@@ -540,9 +540,9 @@ def parse():
             # Add NPC to wave data   
             if is_betting:
                 # For first table val: int("1.0") -> ValueError | int(float("1.0")) -> 1
-                md_new += f"| {int(float(wave_entry))} | {count} {image} {npc_name_prefix} {display_name} {extra_info} |  \n"
+                md_new += f"| {int(float(wave_entry))} | {count} {image if image!="" else ""} {npc_name_prefix} {display_name} {extra_info} |  \n"
             else:
-                md_new += f"{count} {image} {npc_name_prefix} {display_name} {extra_info}  \n"
+                md_new += f"{count} {image if image else ""} {npc_name_prefix} {display_name} {extra_info}  \n"
         
         return md_new, md_npc
     

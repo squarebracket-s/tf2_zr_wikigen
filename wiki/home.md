@@ -4,6 +4,7 @@
  - [Weapon Enhancements](Weapon_Paps)
  - [NPC List](NPCs)
  - [Skilltree](Skilltree)
+<br>
 
  **Legend**
  - `☖` All Damage
