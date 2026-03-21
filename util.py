@@ -23,13 +23,20 @@ if "SCOPE" in os.environ:
 else:
     SCOPE = ["wavesets", "items", "skilltree"]
 
-FILESCOPE = []
+WAVESETS_FILESCOPE = []
 if "FILESCOPE" in os.environ:
-    FILESCOPE = [x.lower() for x in os.environ["FILESCOPE"].split(",")]
+    WAVESETS_FILESCOPE = [x.lower() for x in os.environ["FILESCOPE"].split(",")]
+
+WAVESETS_TYPESCOPE = []
+if "TYPESCOPE" in os.environ:
+    WAVESETS_TYPESCOPE = [x.title() for x in os.environ["TYPESCOPE"].split(",")]
+else:
+    WAVESETS_TYPESCOPE = ["Setup", "Custom", "Betting", "Rogue"]
 
 print("CATEGORIES",CATEGORIES)
 print("SCOPE",SCOPE)
-print("FILESCOPE",FILESCOPE)
+print("FILESCOPE",WAVESETS_FILESCOPE)
+print("TYPESCOPE",WAVESETS_TYPESCOPE)
 
 def id_from_str(string):
     # https://stackoverflow.com/questions/49808639/generate-a-variable-length-hash
@@ -86,6 +93,8 @@ def as_duration(str_):
     ds = "" if s == 0 else f"{s}s "
     return f'{dm}{ds}'
 
+def as_latex(str_):
+    return str_.replace("&","\\&").replace("\\n","$$\n$$").replace(" ", " \\space ").replace("{red}","\\color{red}").replace("{blue}","\\color{blue}").replace("{green}","\\color{green}").replace("{yellow}","\\color{yellow}").replace("{crimson}","\\color{purple}")
 
 def music_modal(wave_entry_data):
     if type(wave_entry_data) == str:

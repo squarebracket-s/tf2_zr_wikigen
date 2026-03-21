@@ -1,8 +1,7 @@
 # Parse all NPCs & Wavesets (Normal & Custom, wavesets like Construction are yet to be supported.)
-import util, os, subprocess, pathlib, vtf2img, json
+import util, os, subprocess, pathlib, vtf2img, json, time
 from collections import defaultdict
 from keyvalues1 import KeyValues1
-# https://stackoverflow.com/questions/2082152/how-to-make-a-case-insensitive-dictionary
 from requests.structures import CaseInsensitiveDict
 
 FLAG_MAPPINGS = {
@@ -31,10 +30,30 @@ MULTIPLIER_MAPPINGS = {
     "extra_size": "⤡",
 }
 
+PHRASES = [
+    "zombieriot.phrases.zombienames.txt",
+    "zombieriot.phrases.item.gift.desc.txt",
+    "zombieriot.phrases.txt",
+    "zombieriot.phrases.rogue.txt",
+    "zombieriot.phrases.rogue.paradox.txt",
+    "zombieriot.phrases.rogue.rift.txt",
+    "zombieriot.phrases.status_effects.txt"
+]
 
-PHRASES_NPC = CaseInsensitiveDict(KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.zombienames.txt"))["Phrases"])
-PHRASES_NPC_2 = CaseInsensitiveDict(KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.item.gift.desc.txt"))["Phrases"])
-PHRASES_WAVESET = CaseInsensitiveDict(KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.txt"))["Phrases"])
+PHRASES_MEM = []
+for p in PHRASES:
+    PHRASES_MEM.append(CaseInsensitiveDict(KeyValues1.parse(util.read(f"./TF2-Zombie-Riot/addons/sourcemod/translations/{p}")))["Phrases"])
+
+def get_key(k,silent=False):
+    for phr in PHRASES_MEM:
+        if k in phr:
+            return phr[k]["en"]
+    if not silent: util.log(f"'{k}' has no translation!", "WARNING")
+    if silent:
+        return "" if util.CATEGORIES == "npc" else ""
+    else:
+        return f"{k}" if util.CATEGORIES == "wavesets" else ""
+
 
 class NPC:
     def __init__(self, path):
@@ -75,12 +94,7 @@ class NPC:
 
             
             desc_key = f"{self.name} Desc"
-            if desc_key in PHRASES_NPC:
-                self.description = PHRASES_NPC[desc_key]["en"].replace("\\n","  \n")
-            elif desc_key in PHRASES_NPC_2:
-                self.description = PHRASES_NPC_2[desc_key]["en"].replace("\\n","  \n")
-            else:
-                self.description = ""
+            self.description = get_key(desc_key, silent=True).replace("\\n","  \n") # (Lots of NPCs with intentionally missing descriptions)
             
             """
             npc_obj = {
@@ -511,16 +525,16 @@ def parse():
                     elif os.path.isfile(premedia_npc_icon_path):
                         image = util.md_img(premedia_npc_icon_path,"B")
                     else:
-                        image = "" #util.md_img("./builtin_img/missing.png","C")
+                        image = "" if "waveset" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","C")
                 else:
-                    image = "" #util.md_img("./builtin_img/missing.png","D")
+                    image = "" if "waveset" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","D")
                 
                 if npc_data.category != "Type_Hidden":
                     display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
                     # Add NPC if not hidden & doesn't exist already
                     md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image}) 
             else:
-                image = "" #util.md_img("./builtin_img/missing.png","E")
+                image = "" if "waveset" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","E")
                 
             for property_, val in PROPERTY_MAPPINGS.items():
                 if property_ in wave_entry_data:
@@ -584,17 +598,6 @@ def parse():
         md_wavesets += md_new
         return md_wavesets, md_npc
     
-    def parse_betting(name, data_raw, md_npc, md_mapsets):
-        data = KeyValues1.parse(unique_enemy_delays(data_raw))
-        wd = defaultdict(str,data)
-        betting_music = util.music_modal(data["Betting"]["BetWars"]["music_background"])
-        mn, md_npc = parse_wave(data["Betting"]["Waves"]["Freeplay"], md_npc, is_betting=True, force=True)
-
-        n = name.split("/")[-1].replace(".cfg","")
-        md_mapsets += f"- [{n}]({n})  \n"
-        
-        return f"{betting_music}\n  Higher budget means more powerful NPC group\n  {mn}", md_npc, md_mapsets
-    
     def parse_waveset_list_cfg_common(cfg, filename, md_npc, md_mapsets):
         map_mode = "maps" in filename # Is map specific config?
         WAVESET_LIST = cfg[list(cfg.keys())[0]] # data of cfg file
@@ -631,10 +634,8 @@ def parse():
 
                 if "desc" in wavesets[waveset_name]:
                     waveset_desc_key = wavesets[waveset_name]["desc"]
-                    if waveset_desc_key in PHRASES_WAVESET:
-                        desc = PHRASES_WAVESET[waveset_desc_key]["en"].replace("\\n","  \n")
-                    else:
-                        util.log(f"'{waveset_desc_key}' has no translation! {filename}", "WARNING")
+                    desc = get_key(waveset_desc_key).replace("\\n","  \n")
+                    if desc == "":
                         desc = waveset_desc_key.replace("\\n","  \n") # Blame Artvin PR #895 for not translating a desc
                 else:
                     desc = ""
@@ -657,20 +658,20 @@ def parse():
         if "Modifiers" in WAVESET_LIST:
             for modifier in WAVESET_LIST["Modifiers"]:
                 data = WAVESET_LIST["Modifiers"][modifier]
-                desc = PHRASES_NPC_2[data["desc"]]["en"].replace("\\n","  \n")
+                desc = get_key(data["desc"]).replace("\\n","  \n")
                 MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
         
         return MARKDOWN_WAVESETS, md_npc, md_mapsets
 
     def parse_waveset_list_cfg(filename, md_npc, md_mapsets, filename_md=None):
-        if (filename not in util.FILESCOPE) and len(util.FILESCOPE)>0:
+        if (filename not in util.WAVESETS_FILESCOPE) and len(util.WAVESETS_FILESCOPE)>0:
             util.log(f"{filename} not in FILESCOPE", "OKBLUE")
             return md_npc, md_mapsets
         WAVESETLIST_RAW = util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{filename}")
         WAVESETLIST_DATA = KeyValues1.parse(WAVESETLIST_RAW)
         WAVESETLIST_TYPE = list(WAVESETLIST_DATA.keys())[0]
 
-        if WAVESETLIST_TYPE not in ["Setup", "Custom", "Betting"]: # Unsupported waveset cfg (Rogue, Bunker, etc.)
+        if WAVESETLIST_TYPE not in util.WAVESETS_TYPESCOPE: # Unsupported waveset cfg (Rogue, Bunker, etc.)
             util.log(f"Unsupported waveset cfg {filename}!","WARNING")
             return md_npc, md_mapsets
         
@@ -679,13 +680,16 @@ def parse():
         """
         maps/zr_bunker_old_fish.cfg - currently disabled in zr and has missing files
         maps/zr_beastrooms.cfg - empty
-        maps/zr_integratedstrategies.cfg - rogue
-        maps/zr_deepforest.cfg - rogue
-        maps/zr_construction.cfg - construction
+        maps/zr_holdout.cfg - const ?
+
+        maps/zr_construction.cfg - const1
         maps/zr_const2_headquarters.cfg - const2 (codename dungeon)
+        
         maps/zr_bettingwars.cfg - betting: delay defines budget/describes how powerful the NPCs are
-        maps/zr_holdout.cfg - const1
-        maps/zr_rift_between_fates.cfg - rogue
+
+        maps/zr_integratedstrategies.cfg - rogue1
+        maps/zr_deepforest.cfg - rogue2
+        maps/zr_rift_between_fates.cfg - rogue3
         """
 
         if WAVESETLIST_TYPE in ["Setup", "Custom"]:
@@ -693,6 +697,8 @@ def parse():
             MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, md_npc, md_mapsets)
         elif WAVESETLIST_TYPE == "Betting":
             MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_RAW, md_npc, md_mapsets)
+        elif WAVESETLIST_TYPE == "Rogue":
+            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_rogue(filename, WAVESETLIST_DATA, md_npc, md_mapsets)
         else:
             MARKDOWN_WAVESETS = f"err key {WAVESETLIST_TYPE}"
             util.log("UNSUPPORTED CFG IN OUTPUT!", "FAIL")
@@ -712,6 +718,59 @@ def parse():
         generated_files[filename_md] = display_name
         util.write(filename_md, MARKDOWN_WAVESETS)
         return md_npc, md_mapsets
+    
+    #### ZR: Special Maps ####
+    def parse_betting(name, data_raw, md_npc, md_mapsets): # zr_bettingwars
+        data = KeyValues1.parse(unique_enemy_delays(data_raw))
+        betting_music = util.music_modal(data["Betting"]["BetWars"]["music_background"])
+        mn, md_npc = parse_wave(data["Betting"]["Waves"]["Freeplay"], md_npc, is_betting=True, force=True)
+
+        n = name.split("/")[-1].replace(".cfg","")
+        md_mapsets += f"- [{n}]({n})  \n"
+        
+        return f"{betting_music}\n  Higher budget means more powerful NPC group\n  {mn}", md_npc, md_mapsets
+    
+    #### ZR: Rogue ####
+    def parse_rogue(name, data, md_npc, md_mapsets):
+        data=data["Rogue"]
+        
+        # Starting data (cash, artifacts, rogue 1/2/3)
+        #tooltip_data = "Drop chance: All non-collected (and sometimes non-blacklisted) droppable items get added <chance> times to a list, from which an item gets randomly chosen."
+        ## {tooltip_data}  \n
+        ## -> [Floors](#Floors)  \n
+        md = f"# Rogue {int(data["Rogue"]["roguestyle"])+1}\n>[!NOTE]\n>Rogue parser currently incomplete.\n\n-> [Curses](#Curses)  \n-> [Artifacts](#Artifacts)  \nStarting cash: ${data["Setup"]["cash"]}  \n\n"
+        for artifact in data["Setup"]["Starting"].keys():
+            md += rogue_item_modal(artifact)
+
+        # Curses
+        md += "# Curses\n"
+        for curse in data["Rogue"]["Curses"].keys():
+            md += rogue_item_modal(curse)
+
+        # All Artifacts
+        md += "# Artifacts\n"
+        for artifact in data["Rogue"]["Artifacts"]:
+            # TODO try to replace this with defaultdict again at some point
+            obj = data["Rogue"]["Artifacts"][artifact]
+            if "hidden" in obj:
+                if obj["hidden"]=="1": continue
+            md += rogue_item_modal(artifact, obj)
+        
+        # Floors
+        # TODO
+
+        # list in home.md, sidebar.md
+        n = name.split("/")[-1].replace(".cfg","")
+        rogue_num = f" - Rogue {int(data["Rogue"]["roguestyle"])+1}"
+        md_mapsets += f"- [{n+rogue_num}]({n})  \n"
+
+        return md, md_npc, md_mapsets
+
+    def rogue_item_modal(name, obj={}):
+        shop_cost = f"$$ cost \\space △ {obj["shopcost"]} $$\n" if "shopcost" in obj else ""
+        dropchance = f"$$ dropchance \\space {obj["dropchance"]} $$\n" if "dropchance" in obj else ""
+        modal = f"$$ \\textbf{{ {get_key(name)} }} $$\n{shop_cost}{dropchance}$$\n{util.as_latex(get_key(f"{name} Desc"))}\n$$"
+        return modal + "  \n"
 
     # NPC list is global to prevent duplicates
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
@@ -741,7 +800,7 @@ def parse():
     COMMIT_SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
     COMMIT_SHA_SHORT = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
 
-    PARSE_RUN_INFO = f"\n<sub>Code parsed at {util.datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')} H:M:S D.M.Y UTC</sub>  \n<sub>Source repository commit [artvin01/TF2-Zombie-Riot@`{COMMIT_SHA_SHORT}`](https://github.com/artvin01/TF2-Zombie-Riot/commit/{COMMIT_SHA})</sub>"
+    PARSE_RUN_INFO = f"\n<sub>Code parsed at {util.datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')} H:M:S D.M.Y {time.tzname[time.daylight]}</sub>  \n<sub>Source repository commit [artvin01/TF2-Zombie-Riot@`{COMMIT_SHA_SHORT}`](https://github.com/artvin01/TF2-Zombie-Riot/commit/{COMMIT_SHA})</sub>"
 
     util.write("npcs.md", MARKDOWN_NPCS)
     util.write("sidebar.md", util.read("wiki/sidebar.md")+MARKDOWN_MAPSETS)
