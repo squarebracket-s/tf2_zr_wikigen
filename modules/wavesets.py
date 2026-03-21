@@ -525,16 +525,16 @@ def parse():
                     elif os.path.isfile(premedia_npc_icon_path):
                         image = util.md_img(premedia_npc_icon_path,"B")
                     else:
-                        image = "" if "waveset" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","C")
+                        image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","C")
                 else:
-                    image = "" if "waveset" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","D")
+                    image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","D")
                 
                 if npc_data.category != "Type_Hidden":
                     display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
                     # Add NPC if not hidden & doesn't exist already
                     md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image}) 
             else:
-                image = "" if "waveset" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","E")
+                image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","E")
                 
             for property_, val in PROPERTY_MAPPINGS.items():
                 if property_ in wave_entry_data:
@@ -769,7 +769,7 @@ def parse():
     def rogue_item_modal(name, obj={}):
         shop_cost = f"$$ cost \\space △ {obj["shopcost"]} $$\n" if "shopcost" in obj else ""
         dropchance = f"$$ dropchance \\space {obj["dropchance"]} $$\n" if "dropchance" in obj else ""
-        modal = f"$$ \\textbf{{ {get_key(name)} }} $$\n{shop_cost}{dropchance}$$\n{util.as_latex(get_key(f"{name} Desc"))}\n$$"
+        modal = f"$$ \\textbf{{ {util.as_latex(get_key(name))} }} $$\n{shop_cost}{dropchance}$$\n{util.as_latex(get_key(f"{name} Desc"))}\n$$"
         return modal + "  \n"
 
     # NPC list is global to prevent duplicates
