@@ -769,7 +769,7 @@ def parse():
     def rogue_item_modal(name, obj={}):
         shop_cost = f"$$ cost \\space △ {obj["shopcost"]} $$\n" if "shopcost" in obj else ""
         dropchance = f"$$ dropchance \\space {obj["dropchance"]} $$\n" if "dropchance" in obj else ""
-        modal = f"$$ \\textbf{{ {util.as_latex(get_key(name))} }} $$\n{shop_cost}{dropchance}$$\n{util.as_latex(get_key(f"{name} Desc"))}\n$$"
+        modal = f"$$ \\textbf{{ {get_key(name).replace("&","\\&")} }} $$\n{shop_cost}{dropchance}$$\n{util.as_latex(get_key(f"{name} Desc"))}\n$$"
         return modal + "  \n"
 
     # NPC list is global to prevent duplicates
