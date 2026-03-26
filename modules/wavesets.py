@@ -765,12 +765,12 @@ def parse():
         md += "# Floors\n"
         for idx, (floor_name, floor_data) in enumerate(data["Rogue"]["Floors"].items()):
             rooms = floor_data["rooms"]
-            md += f"## {idx}. {floor_name}\n{rooms} room{"s"*int(int(rooms)>1)}  \n"
+            md += f"## {idx+1}. {floor_name}\n{rooms} room{"s"*int(int(rooms)>1)}  \n"
             for entry, val in floor_data.items():
                 if "music" in entry:
                     md += f"{entry.split("_")[0].title()}: {util.music_modal(val)}"
             
-            md_stages += f"    {idx}. {floor_name}  \n"
+            md_stages += f"    {idx+1}. {floor_name}  \n"
             for sname, sdata in floor_data["Stages"].items():
                 sd = defaultdict(str, sdata)
                 util.log(f"    {sname}{" "*(35-len(sname))}| {sd["wave"] if "wave" in sdata else "-"}")
