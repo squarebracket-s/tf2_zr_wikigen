@@ -763,13 +763,14 @@ def parse():
         
         # Floors
         md += "# Floors\n"
-        for floor_name, floor_data in data["Rogue"]["Floors"].items():
+        for idx, (floor_name, floor_data) in enumerate(data["Rogue"]["Floors"].items()):
             rooms = floor_data["rooms"]
-            md += f"## {floor_name}\n{rooms} room{"s"*int(int(rooms)>1)}  \n"
+            md += f"## {idx}. {floor_name}\n{rooms} room{"s"*int(int(rooms)>1)}  \n"
             for entry, val in floor_data.items():
                 if "music" in entry:
                     md += f"{entry.split("_")[0].title()}: {util.music_modal(val)}"
             
+            md_stages += f"    {idx}. {floor_name}  \n"
             for sname, sdata in floor_data["Stages"].items():
                 sd = defaultdict(str, sdata)
                 util.log(f"    {sname}{" "*(35-len(sname))}| {sd["wave"] if "wave" in sdata else "-"}")
@@ -782,7 +783,7 @@ def parse():
                     md, md_npc = parse_waveset(sdata["wave"], WAVESET_DATA, md, md_npc, DEPTH=4)
                 md_stages +=  f"    - [{sname}](#{util.to_section_link(sname)})  \n"
 
-        md = f"# Rogue {int(data["Rogue"]["roguestyle"])+1}\n\n- [Curses](#Curses)  \n- [Artifacts](#Artifacts)  \n- [Floors](#Floors)  \n{md_stages}Starting cash: ${data["Setup"]["cash"]}{music_text}  \n\n" + md
+        md = f"# Rogue {int(data["Rogue"]["roguestyle"])+1}\n\n- [Curses](#Curses)  \n- [Artifacts](#Artifacts)  \n- [Floors](#Floors)  \n{md_stages}\nStarting cash: ${data["Setup"]["cash"]}{music_text}  \n\n" + md
 
         # list in home.md, sidebar.md
         n = name.split("/")[-1].replace(".cfg","")
