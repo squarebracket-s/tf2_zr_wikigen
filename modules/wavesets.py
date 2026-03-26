@@ -560,7 +560,7 @@ def parse():
         
         return md_new, md_npc
     
-    def parse_waveset(name, data, md_wavesets, md_npc):
+    def parse_waveset(name, data, md_wavesets, md_npc, DEPTH=2):
         global waveset_cache
         if name in waveset_cache:
             util.debug(f"    -> Returning cache for {name}", "waveset", "OKCYAN")
@@ -592,7 +592,7 @@ def parse():
             abovelimit = False if "fakemaxwaves" not in wd else wave_idx > int(wd["fakemaxwaves"]) # If wave number is above specified max fake limit
 
             mn, md_npc = parse_wave(wave_data, md_npc)
-            md_new += f"## {wave_idx}  \n{mn}" # marking in headers does not work in github markdown!! TODO
+            md_new += f"{"#"*DEPTH} {wave_idx}  \n{mn}" # marking in headers does not work in github markdown!! TODO
         
         waveset_cache[name] = md_new
         md_wavesets += md_new
@@ -738,7 +738,12 @@ def parse():
         #tooltip_data = "Drop chance: All non-collected (and sometimes non-blacklisted) droppable items get added <chance> times to a list, from which an item gets randomly chosen."
         ## {tooltip_data}  \n
         ## -> [Floors](#Floors)  \n
-        md = f"# Rogue {int(data["Rogue"]["roguestyle"])+1}\n>[!NOTE]\n>Rogue parser currently incomplete.\n\n-> [Curses](#Curses)  \n-> [Artifacts](#Artifacts)  \nStarting cash: ${data["Setup"]["cash"]}  \n\n"
+        music_text = ""
+        for entry, val in data.items():
+            if "music" in entry:
+                music_text += util.music_modal(val)
+        md_stages = ""
+        md = ""
         for artifact in data["Setup"]["Starting"].keys():
             md += rogue_item_modal(artifact)
 
@@ -757,7 +762,27 @@ def parse():
             md += rogue_item_modal(artifact, obj)
         
         # Floors
-        # TODO
+        md += "# Floors\n"
+        for floor_name, floor_data in data["Rogue"]["Floors"].items():
+            rooms = floor_data["rooms"]
+            md += f"## {floor_name}\n{rooms} room{"s"*int(int(rooms)>1)}  \n"
+            for entry, val in floor_data.items():
+                if "music" in entry:
+                    md += f"{entry.split("_")[0].title()}: {util.music_modal(val)}"
+            
+            for sname, sdata in floor_data["Stages"].items():
+                sd = defaultdict(str, sdata)
+                util.log(f"    {sname}{" "*(35-len(sname))}| {sd["wave"] if "wave" in sdata else "-"}")
+                key_text = f"Only with{"out"*int(sd["keyinverse"]=="1")} key: {sd["key"]}  \n" if "key" in sdata else ""
+                md += f"### {sname}\n{key_text}{"_Encounter_  \n" if sd["camera"].startswith("camera_encounter") else ""}"
+                if "wave" in sdata:
+                    wave_cfg = util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{sdata["wave"]}.cfg")
+                    wave_cfg = unique_enemy_delays(wave_cfg)
+                    WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
+                    md, md_npc = parse_waveset(sdata["wave"], WAVESET_DATA, md, md_npc, DEPTH=4)
+                md_stages +=  f"    - [{sname}](#{util.to_section_link(sname)})  \n"
+
+        md = f"# Rogue {int(data["Rogue"]["roguestyle"])+1}\n\n- [Curses](#Curses)  \n- [Artifacts](#Artifacts)  \n- [Floors](#Floors)  \n{md_stages}Starting cash: ${data["Setup"]["cash"]}{music_text}  \n\n" + md
 
         # list in home.md, sidebar.md
         n = name.split("/")[-1].replace(".cfg","")

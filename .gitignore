@@ -11,9 +11,6 @@ repo_img/
 tf2_zr_wikigen.wiki/
 
 items.md
-wavesets_fastmode_redsun.cfg.md
-wavesets_fastmode.cfg.md
-wavesets_classic.cfg.md
 weapon_paps.md
 npcs.md
 skilltree.md
@@ -21,6 +18,7 @@ npc_data.json
 npc_data_01.json
 npc_data_02.json
 zr_*.md
+ZR:*.md
 vsh_.md
 sidebar.md
 home.md
