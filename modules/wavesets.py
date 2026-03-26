@@ -781,7 +781,7 @@ def parse():
                     wave_cfg = unique_enemy_delays(wave_cfg)
                     WAVESET_DATA = KeyValues1.parse(wave_cfg)["Waves"]
                     md, md_npc = parse_waveset(sdata["wave"], WAVESET_DATA, md, md_npc, DEPTH=4)
-                md_stages +=  f"    - [{sname}](#{util.to_section_link(sname)})  \n"
+                md_stages +=  f"    - [{sname}](#{util.to_section_link(sname).replace("!","-1")})  \n"
 
         md = f"# Rogue {int(data["Rogue"]["roguestyle"])+1}\n\n- [Curses](#Curses)  \n- [Artifacts](#Artifacts)  \n- [Floors](#Floors)  \n{md_stages}\nStarting cash: ${data["Setup"]["cash"]}{music_text}  \n\n" + md
 
