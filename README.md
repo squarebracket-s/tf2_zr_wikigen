@@ -1,5 +1,5 @@
 # tf2_zr_wikigen
-Script that utilises code from https://github.com/artvin01/TF2-Zombie-Riot to generate a wiki.
+Automatic encylopedia generator for https://github.com/artvin01/TF2-Zombie-Riot.
 
 # [Wiki](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki)
 
