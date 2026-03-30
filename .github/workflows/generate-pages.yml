@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-    - pages_gen
+    - page_gen
   workflow_dispatch:
 
 jobs:
