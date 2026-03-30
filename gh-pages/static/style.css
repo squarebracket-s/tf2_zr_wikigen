@@ -138,7 +138,7 @@ li:before {
 }
 
 /* weapon content */
-.sidenav {
+.sidebar {
   height: 100%; /* Full-height: remove this if you want "auto" height */
   width: 500px; /* Set the width of the sidebar */
   position: fixed; /* Fixed Sidebar (stay in place on scroll) */
@@ -156,5 +156,29 @@ li:before {
 }
 
 .secondary {
-    color: hsl(from var(--deep-space-bluee) h 25% l)
+    color: hsl(from var(--deep-space-blue) h 25% l)
+}
+
+#taglist {
+    display: flex;
+    width: 100%;
+    padding: 10px;
+    flex-wrap:wrap;
+}
+
+.btn {
+    background-color: var(--bg-light);
+    color: var(--deep-space-blue);
+    padding: 10px;
+    margin: 5px;
+    user-select: none;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background-color: hsl(from var(--bg-light) h s 50%);
+}
+
+.btn-active {
+    background-color: hsl(from var(--bg-light) h s 45%);
 }

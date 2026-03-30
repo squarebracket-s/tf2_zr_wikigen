@@ -164,17 +164,16 @@ def parse():
 
         #pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
         
-        wid = util.id_from_str(weapon_name + description)
+        #wid = util.id_from_str(weapon_name + description)
         context = {
         #    "name": weapon_name, # TODO put title into sidebar using js
             "tags": tags,
             "author": author,
             "cost": cost,
             "desc": f"<div>{lvl}</div><div>{description}</div>",
-            "wid": wid
         }
 
-        return util.fill_template(util.read("templates/item.html"), context), wid, gtags
+        return util.fill_template(util.read("templates/item.html"), context), tags, gtags
         
         #return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{lvl}{description}  \n{pap_links}  ", header, pap_md, gtags
 
@@ -189,11 +188,11 @@ def parse():
                     pass
                     #markdown_header += f"{" "*(depth+1)}{item}  \n" # Trophy:
                 elif is_weapon(item_data):
-                    item_html, wid, tags = parse_weapon_data(item,item_data,depth,tags)
+                    item_html, wtags, tags = parse_weapon_data(item,item_data,depth,tags)
                     context = {
                         "name": item,
                         "data": item_html,
-                        "wid": wid
+                        "wtags": wtags
                     }
                     html += util.fill_template(util.read("templates/item_preview.html"), context)
                     html_weapondata += item_html
@@ -216,8 +215,9 @@ def parse():
     
     #taglist_str = "  \n".join({f" - #{tag}" for tag in tags})
     #HTML_WEAPON = f"**Available tags:** \n{taglist_str}  \n"+HTML_WEAPON
-
+    tags_html = "".join([f"<div class=\"btn\" onclick=\"filter('{tag}');\">#{tag}</div>" for tag in tags])
     context = {
-        "$": HTML_WEAPON
+        "gtags": tags_html,
+        "itemdata": HTML_WEAPON
     }
     util.write("gh-pages/items.html", util.fill_template(util.read("templates/items.html"), context))
