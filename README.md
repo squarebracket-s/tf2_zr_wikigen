@@ -10,7 +10,7 @@ Automatic encylopedia generator for https://github.com/artvin01/TF2-Zombie-Riot.
   - [ ] Special wavesets
     - [x] ZR: Survival
     - [x] ZR: Raidrush
-    - [ ] ZR: Rogue
+    - [x] ZR: Rogue
     - [ ] ZR: Construction
         - [ ] Construction 1
         - [ ] Construction 2
