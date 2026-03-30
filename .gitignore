@@ -1,18 +1,20 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[codz]
-*$py.class
 
 # Local testing
+.obsidian/
 venv/
 TF2-Zombie-Riot/
+
 repo_img/
 premedia_icons_unused/
-.obsidian/
-gh-pages/
 
 /*.html
 npc_data.json
 npc_data_01.json
 npc_data_02.json
 *.cfg
+
+gh-pages/*
+!gh-pages/static/
+!gh-pages/index.html

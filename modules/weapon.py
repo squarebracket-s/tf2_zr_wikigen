@@ -69,9 +69,7 @@ class WeaponPap_Dummy:
 def parse():
     util.log("Parsing Weapon List...")
 
-    MARKDOWN_WEAPON = ""
-    MARKDOWN_WEAPON_HEADERS = ""
-    MARKDOWN_WEAPON_PAP = ""
+    HTML_WEAPON = ""
     
     def is_item_category(c):
         return "enhanceweapon_click" not in c and "cost" not in c
@@ -149,48 +147,53 @@ def parse():
         else:
             lvl = ""
 
-        pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
-        header = f"{" "*(depth+1)} {util.to_file_link(weapon_name, "Item_Data", weapon_name)}  \n"
+        #pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
         
-        return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{lvl}{description}  \n{pap_links}  ", header, pap_md, gtags
+        context = {
+            "name": weapon_name,
+            "tags": tags,
+            "author": author,
+            "cost": cost,
+            "desc": f"{lvl}{description}"
+        }
+        return util.fill_template(util.read("templates/item.html"), context), gtags
+        
+        #return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{lvl}{description}  \n{pap_links}  ", header, pap_md, gtags
 
 
-    def item_block(key,data,depth,markdown,markdown_header,markdown_pap,tags):
+    def item_block(key,data,depth,html,tags):
         if "hidden" not in data:
             depth += 1
-            markdown += f"#{"#"*depth} {key}  \n"
-            markdown_header += f"{" "*depth} {key}  \n"
+            html += util.fill_template(util.read("templates/item_block_start.html"),{"key":key})
             for item in data:
                 item_data = data[item]
                 if is_trophy(item_data):
-                    markdown_header += f"{" "*(depth+1)}{item}  \n" # Trophy:
+                    pass
+                    #markdown_header += f"{" "*(depth+1)}{item}  \n" # Trophy:
                 elif is_weapon(item_data):
-                    m, mh, mp, tags = parse_weapon_data(item,item_data,depth,tags)
-                    markdown += m
-                    markdown_header += mh
-                    markdown_pap += mp
+                    html_out, tags = parse_weapon_data(item,item_data,depth,tags)
+                    html += html_out
                 elif item[0].isupper() and is_category(item_data) or "Perks" in item: # unneeded data is always lowercase...
-                    markdown, markdown_header, markdown_pap, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
-                elif "Trophies" == item:
-                    _, markdown_header, markdown_pap, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
-                elif "whiteout" in item_data:
-                    markdown_header += f"{" "*(depth+1)}{item}  \n" # Info:
-        return markdown, markdown_header, markdown_pap, tags
+                    html, tags = item_block(item, item_data, depth, html, tags)
+                elif "Trophies" == item: # Item
+                    util.log("skipping Trophies entry")
+                    #_, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
+                elif "whiteout" in item_data: # Text shown in menu
+                    html += item
+                    #markdown_header += f"{" "*(depth+1)}{item}  \n"
+            html += "</details>\n"
+        return html, tags
 
 
     tags = []
     for item_category in CFG_WEAPONS:
         if is_item_category(CFG_WEAPONS[item_category]):
-            MARKDOWN_WEAPON, MARKDOWN_WEAPON_HEADERS, MARKDOWN_WEAPON_PAP, tags = item_block(item_category,CFG_WEAPONS[item_category],0,MARKDOWN_WEAPON,MARKDOWN_WEAPON_HEADERS,MARKDOWN_WEAPON_PAP, tags)
+            HTML_WEAPON, tags = item_block(item_category,CFG_WEAPONS[item_category],0,HTML_WEAPON, tags)
     
-    taglist_str = "  \n".join({f" - #{tag}" for tag in tags})
-    MARKDOWN_WEAPON = f"**Available tags:** \n{taglist_str}  \n"+MARKDOWN_WEAPON
+    #taglist_str = "  \n".join({f" - #{tag}" for tag in tags})
+    #HTML_WEAPON = f"**Available tags:** \n{taglist_str}  \n"+HTML_WEAPON
 
-    util.write("items.md", MARKDOWN_WEAPON_HEADERS)
-    util.write("item_data.md", MARKDOWN_WEAPON)
-    util.write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
-    return {
-        "items.md": "Items.md",
-        "item_data.md": "Item_Data.md",
-        "weapon_paps.md": "Weapon_Paps.md"
+    context = {
+        "$": HTML_WEAPON
     }
+    util.write("gh-pages/items.html", util.fill_template(util.read("templates/items.html"), context))

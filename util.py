@@ -21,7 +21,8 @@ SCOPE = []
 if "SCOPE" in os.environ:
     SCOPE = [x.lower() for x in os.environ["SCOPE"].split(",")]
 else:
-    SCOPE = ["wavesets", "items", "skilltree"]
+    #SCOPE = ["wavesets", "items", "skilltree"]
+    SCOPE = ["items"]
 
 WAVESETS_FILESCOPE = []
 if "FILESCOPE" in os.environ:
@@ -37,27 +38,6 @@ print("CATEGORIES",CATEGORIES)
 print("SCOPE",SCOPE)
 print("FILESCOPE",WAVESETS_FILESCOPE)
 print("TYPESCOPE",WAVESETS_TYPESCOPE)
-
-def id_from_str(string):
-    # https://stackoverflow.com/questions/49808639/generate-a-variable-length-hash
-    return hashlib.shake_256(string.encode("utf-8")).hexdigest(2)
-
-
-def to_section_link(str_, pre_h=False):
-    remove = [
-        "&",
-        "[",
-        "]",
-        "'",
-        ","
-    ]
-    for r in remove:
-        str_ = str_.replace(r,"")
-    return f"{"-"*int(pre_h)}{str_.lower().replace(" ","-")}"
-
-def to_file_link(display, file, header, pre_h=False):
-    return f"[{display}](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki/{file}#{to_section_link(header,pre_h)})"
-
 
 def md_img(url, alt, width=16):
     #return f'<img src="{url}" alt="{alt}" width="{width}"/>'
@@ -93,26 +73,11 @@ def as_duration(str_):
     ds = "" if s == 0 else f"{s}s "
     return f'{dm}{ds}'
 
-def as_latex(str_):
-    return str_.replace("&","\\&").replace("\\n","$$\n$$").replace(" ", " \\space ").replace("{red}","\\color{red}").replace("{blue}","\\color{blue}").replace("{green}","\\color{green}").replace("{yellow}","\\color{yellow}").replace("{crimson}","\\color{purple}")
 
-def music_modal(wave_entry_data):
-    if type(wave_entry_data) == str:
-        mfilename = wave_entry_data.replace("#","")
-        music = mfilename
-        try: int(wave_entry_data); return None # skip if not actual music entry e.g. "music_outro_duration"	"65"
-        except ValueError: pass
-    else:
-        wave_entry_data = defaultdict(str,wave_entry_data)
-        music_name = wave_entry_data["file"].replace("#","")
-        if wave_entry_data["name"] != "": music_name = wave_entry_data["name"]
-        if wave_entry_data["author"] != "": author = f"by {wave_entry_data["author"]}"
-        else: author = ""
-        music = f"{music_name} {author}"
-        mfilename = wave_entry_data["file"].replace("#","")
-    file = f"[{ICON_DOWNLOAD}](https://raw.githubusercontent.com/artvin01/TF2-Zombie-Riot/refs/heads/master/sound/{mfilename})"
-    if not os.path.isfile(f"./TF2-Zombie-Riot/sound/{mfilename}"): file = ICON_X_SQUARE
-    return f"{ICON_MUSIC} {music.replace("_","\\_")} {file}  \n"
+def fill_template(template, context):
+    for k,v in context.items():
+        template=template.replace(k,v)
+    return template
 
 
 def debug(str_, category, color="OKGREEN"):
