@@ -44,4 +44,4 @@ jobs:
         git add .
         git commit -m "Generate Pages [ https://github.com/squarebracket-s/tf2_zr_wikigen/commit/$GITHUB_SHA ]"
         git remote add origin https://x-access-token:${{ secrets.WIKI_PAT }}@github.com/squarebracket-s/tf2_zr_wikigen.git
-        git push origin gh-pages
+        git push origin gh-pages --force
