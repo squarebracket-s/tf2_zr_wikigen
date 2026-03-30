@@ -17,7 +17,7 @@ function filter(tag) {
 }
 
 function remove_items_by_tag(root, tag) {
-    const l = root.getElementsByTagName("li")
+    const l = root.getElementsByTagName("li");
     let has_visible_items = false
     if (l.length>0) {
         for (var i=0, item; item = l[i]; i++) {
@@ -31,18 +31,10 @@ function remove_items_by_tag(root, tag) {
                 }
             }
         }
-    } else {
-        const r = root.getElementsByTagName("details")
-        for (var i=0, item; item = r[i]; i++) {
-            if (remove_items_by_tag(item, tag)) {
-                has_visible_items=true;
-            }
-        }
     }
     if (!has_visible_items) {
         root.classList.add("hidden");
     } else {
         root.classList.remove("hidden");
     }
-    return has_visible_items
 }

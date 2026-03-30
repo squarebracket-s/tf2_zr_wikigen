@@ -149,6 +149,7 @@ def parse():
         else: author = ""
 
         cost = "$" + weapon_data["cost"]
+        if cost=="$0": cost="Free"
 
         if "desc" in weapon_data: 
             k = weapon_data["desc"]
