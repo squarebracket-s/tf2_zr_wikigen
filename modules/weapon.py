@@ -1,9 +1,29 @@
 # Parse all items, weapons and their paps.
 import util
 from keyvalues1 import KeyValues1
+from requests.structures import CaseInsensitiveDict
 
-PHRASES_WEAPON = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt"))["Phrases"]
 CFG_WEAPONS = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
+
+PHRASES = [
+    "zombieriot.phrases.weapons.description.txt",
+    "zombieriot.phrases.weapons.txt"
+]
+
+PHRASES_MEM = []
+for p in PHRASES:
+    PHRASES_MEM.append(CaseInsensitiveDict(KeyValues1.parse(util.read(f"./TF2-Zombie-Riot/addons/sourcemod/translations/{p}")))["Phrases"])
+
+def get_key(k,silent=False):
+    for phr in PHRASES_MEM:
+        if k in phr:
+            return phr[k]["en"]
+    if not silent: util.log(f"'{k}' has no translation!", "WARNING")
+    if silent:
+        return "" if util.CATEGORIES == "npc" else ""
+    else:
+        return f"{k}" if util.CATEGORIES == "wavesets" else ""
+
 
 class WeaponPap:
     def __init__(self, weapon_name, weapon_data, idx, depth):
@@ -42,10 +62,7 @@ class WeaponPap:
 
 
     def to_md(self):
-        if self.description in PHRASES_WEAPON:
-            desc = PHRASES_WEAPON[self.description]["en"]
-        else:
-            desc = self.description # some paps don't have translation for whatever reason lmao
+        desc = get_key(self.description)
         
         extra_desc = self.extra_desc if len(self.extra_desc) > 0 else ""
 
@@ -70,6 +87,7 @@ def parse():
     util.log("Parsing Weapon List...")
 
     HTML_WEAPON = ""
+    HTML_WEAPONDATA = ""
     
     def is_item_category(c):
         return "enhanceweapon_click" not in c and "cost" not in c
@@ -134,11 +152,8 @@ def parse():
 
         if "desc" in weapon_data: 
             k = weapon_data["desc"]
-            if k in PHRASES_WEAPON:
-                description = PHRASES_WEAPON[k]["en"]
-            else: # this only exists because of the Infinity Blade
-                description = k
-            description = description.replace("\\n","  \n").replace("\n-","\n - ") + "  \n"
+            description = get_key(k)
+            description = description.replace("\\n","</div><div>").replace("<div>-","<div> - ") + "\n"
             if description.startswith("-"): description=" - "+description[1:]
         else: description = ""
 
@@ -149,19 +164,22 @@ def parse():
 
         #pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
         
+        wid = util.id_from_str(weapon_name + description)
         context = {
-            "name": weapon_name,
+        #    "name": weapon_name, # TODO put title into sidebar using js
             "tags": tags,
             "author": author,
             "cost": cost,
-            "desc": f"{lvl}{description}"
+            "desc": f"<div>{lvl}</div><div>{description}</div>",
+            "wid": wid
         }
-        return util.fill_template(util.read("templates/item.html"), context), gtags
+
+        return util.fill_template(util.read("templates/item.html"), context), wid, gtags
         
         #return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{lvl}{description}  \n{pap_links}  ", header, pap_md, gtags
 
 
-    def item_block(key,data,depth,html,tags):
+    def item_block(key,data,depth,html,html_weapondata,tags):
         if "hidden" not in data:
             depth += 1
             html += util.fill_template(util.read("templates/item_block_start.html"),{"key":key})
@@ -171,10 +189,16 @@ def parse():
                     pass
                     #markdown_header += f"{" "*(depth+1)}{item}  \n" # Trophy:
                 elif is_weapon(item_data):
-                    html_out, tags = parse_weapon_data(item,item_data,depth,tags)
-                    html += html_out
+                    item_html, wid, tags = parse_weapon_data(item,item_data,depth,tags)
+                    context = {
+                        "name": item,
+                        "data": item_html,
+                        "wid": wid
+                    }
+                    html += util.fill_template(util.read("templates/item_preview.html"), context)
+                    html_weapondata += item_html
                 elif item[0].isupper() and is_category(item_data) or "Perks" in item: # unneeded data is always lowercase...
-                    html, tags = item_block(item, item_data, depth, html, tags)
+                    html, html_weapondata, tags = item_block(item, item_data, depth, html, html_weapondata, tags)
                 elif "Trophies" == item: # Item
                     util.log("skipping Trophies entry")
                     #_, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
@@ -182,13 +206,13 @@ def parse():
                     html += item
                     #markdown_header += f"{" "*(depth+1)}{item}  \n"
             html += "</details>\n"
-        return html, tags
+        return html, html_weapondata, tags
 
 
     tags = []
     for item_category in CFG_WEAPONS:
         if is_item_category(CFG_WEAPONS[item_category]):
-            HTML_WEAPON, tags = item_block(item_category,CFG_WEAPONS[item_category],0,HTML_WEAPON, tags)
+            HTML_WEAPON, HTML_WEAPONDATA, tags = item_block(item_category,CFG_WEAPONS[item_category],0, HTML_WEAPON, HTML_WEAPONDATA, tags)
     
     #taglist_str = "  \n".join({f" - #{tag}" for tag in tags})
     #HTML_WEAPON = f"**Available tags:** \n{taglist_str}  \n"+HTML_WEAPON

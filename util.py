@@ -39,6 +39,10 @@ print("SCOPE",SCOPE)
 print("FILESCOPE",WAVESETS_FILESCOPE)
 print("TYPESCOPE",WAVESETS_TYPESCOPE)
 
+def id_from_str(string):
+    # https://stackoverflow.com/questions/49808639/generate-a-variable-length-hash
+    return hashlib.shake_256(string.encode("utf-8")).hexdigest(2)
+
 def md_img(url, alt, width=16):
     #return f'<img src="{url}" alt="{alt}" width="{width}"/>'
     return f'<img src="{url}" width="{width}"/>'

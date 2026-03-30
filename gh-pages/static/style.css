@@ -91,8 +91,8 @@ a:hover {
 
 .tooltip {
   z-index: 1; /* Stay on top */
-  height: 175px;
-  width: 300px;
+  height: max-content;
+  width: max-content;
   top: 115%;
   left: 0;
   border-radius: 5px;
@@ -100,7 +100,10 @@ a:hover {
   position: absolute;
   transition: 0.25s;
   pointer-events: none;
-  padding: 25px;
+  padding-top: 25px;
+  padding-bottom: 25px;
+  padding-left: 35px;
+  padding-right: 35px;
   background-color: var(--bg-light);
   color: var(--deep-space-blue);
 }
@@ -150,4 +153,8 @@ li:before {
 
 .hidden {
     display:none;
+}
+
+.secondary {
+    color: hsl(from var(--deep-space-bluee) h 25% l)
 }
