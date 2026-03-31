@@ -1,5 +1,8 @@
-/* this may be extremely inefficient but hey it does the job */
-function filter(tag) {
+let filter_tag = "";
+let filter_pap = false;
+let filter_content = "";
+/* Filter by TAG */
+function filter_set_tag(tag) {
     const tags = document.getElementById("taglist").getElementsByTagName("div");
     for (var i=0, item; item = tags[i]; i++) {
         if (item.textContent.includes(tag)) {
@@ -10,15 +13,21 @@ function filter(tag) {
     }
 
     if (tag==="All") {tag=""};
+    filter_tag = tag;
+    filter();
+}
+function filter_set_pap(checkbox) {
+    filter_pap = checkbox.checked;
+    filter();
+}
+function filter() {
     const r = document.getElementsByTagName("details");
     for (var i=0, item; item = r[i]; i++) {
-        remove_items_by_tag(item, tag);
+        remove_items_by_tag(item);
     }
 }
 
-let last_tag = "";
-function remove_items_by_tag(root, tag) {
-    last_tag = tag;
+function remove_items_by_tag(root) {
     const la = Array.prototype.slice.call(root.getElementsByTagName("li"),0);
     const lb = Array.prototype.slice.call(root.getElementsByTagName("div"),0);
     const l = la.concat(lb);
@@ -26,13 +35,33 @@ function remove_items_by_tag(root, tag) {
     for (var i=0, item; item = l[i]; i++) {
         if (item.hasAttribute("weapon_tags")) {
             let attr = item.getAttribute("weapon_tags");
-            if (!attr.includes(tag)) {
+            let already_hidden = false;
+            if (!attr.includes(filter_tag)) {
                 item.classList.add("hidden");
+                already_hidden=true;
             } else {
-                if (!paps_shown && item.classList.contains("weapon_pap")) { continue }; //respect current pap filter
                 item.classList.remove("hidden");
-                has_visible_items = true;
             }
+
+            if (!already_hidden) {
+                already_hidden = false;
+                if (filter_pap && item.classList.contains("weapon_pap")) {
+                    item.classList.remove("hidden");
+                } else if (!filter_pap && item.classList.contains("weapon_pap")) {
+                    item.classList.add("hidden");
+                    already_hidden=true;
+                };
+
+                if (!already_hidden) {
+                    if (item.textContent.toLowerCase().includes(filter_content.toLowerCase())) {
+                        item.classList.remove("hidden");
+                        has_visible_items = true;
+                    } else {
+                        item.classList.add("hidden");
+                    }
+                }
+            };
+
         }
     }
     if (!has_visible_items) {
@@ -42,7 +71,7 @@ function remove_items_by_tag(root, tag) {
     }
 }
 
-let paps_shown = false;
+/* Filter paps ON/OFF */
 function togglePaps(checkbox) {
     paps_shown = checkbox.checked;
     const pap_elements = document.getElementsByClassName("weapon_pap");
@@ -57,6 +86,13 @@ function togglePaps(checkbox) {
         }
     }
 }
+
+/* Filter by CUSTOM STRING */
+const item_filter_text = document.getElementById("item_filter_input");
+item_filter_text.addEventListener('input', function (evt) {
+    filter_content = evt.target.value;
+    filter();
+});
 
 
 /*

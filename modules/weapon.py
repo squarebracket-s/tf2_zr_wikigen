@@ -87,7 +87,7 @@ class WeaponPap:
             "name": self.name,
             "tags": tags,
             "author": "",
-            "cost": f"${self.cost}",
+            "cost": f"{self.cost}",
             "desc": f"<div>{desc.replace("\\n","</div>\n<div>")}</div>\n<div>{extra_desc.replace("\\n","</div>\n<div>")}</div>",
         }
         return util.fill_template(util.read("templates/item.html"), context)
@@ -109,14 +109,13 @@ def parse():
     util.log("Parsing Weapon List...")
 
     HTML_WEAPON = ""
-    HTML_WEAPONDATA = ""
     
     def is_item_category(c):
         return "enhanceweapon_click" not in c and "cost" not in c
 
 
     def is_weapon(c):
-        return "desc" in c or "author" in c
+        return (("desc" in c) or ("author" in c)) and not "weaponkit" in c
 
 
     def is_trophy(c):
@@ -134,16 +133,16 @@ def parse():
         pap_idx = 0
         pap_html = ""
         def item_block(parent_pap,idx,html,depth):
-            html += f"<div class=\"weapon_pap hidden\" weapon_tags=\"wtags\" style=\"margin-left: {(depth+1)*10}px;\">"
+            html += f"<div class=\"weapon_pap hidden\" weapon_tags=\"wtags\" style=\"margin-left: {(depth+1)*10}px;\">\n"
             for i in range(int(parent_pap.pappaths)):
                 idx += 1
                 if int(parent_pap.pappaths)>1:
-                    html += f"<i>Path {i+1}</i>"
+                    html += f"<i>Path {i+1}</i>\n"
                 pd = WeaponPap(weapon_name,weapon_data,idx,depth)
                 if pd.valid:
                     html += pd.to_html()
                     if pd.pappaths!="0": html = item_block(pd, idx+int(pd.papskip), html, depth+1)
-            html += "</div>"
+            html += "</div>\n"
             return html
         
         if "pappaths" in weapon_data: init_pap_paths = weapon_data["pappaths"]
@@ -163,11 +162,11 @@ def parse():
                 if tag.capitalize() not in gtags and tag not in gtags and len(tag)>2: gtags.append(tag)
         else: tags = ""
 
-        if "author" in weapon_data: author = f"Author: {weapon_data["author"]}"
+        if "author" in weapon_data: author = f"By {weapon_data["author"]}"
         else: author = ""
 
-        cost = "$" + weapon_data["cost"]
-        if cost=="$0": cost="Free"
+        cost = weapon_data["cost"]
+        if cost=="0": cost="Free"
 
         if "desc" in weapon_data: 
             k = weapon_data["desc"]
@@ -189,7 +188,7 @@ def parse():
             "tags": tags,
             "author": author,
             "cost": cost,
-            "desc": f"<div>{lvl}</div>\n<div>{description}</div>",
+            "desc": f"<div>{lvl}</div>\n<div>{description}</div>\n",
         }
 
 
@@ -198,7 +197,7 @@ def parse():
         #return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{lvl}{description}  \n{pap_links}  ", header, pap_md, gtags
 
 
-    def item_block(key,data,depth,html,html_weapondata,tags):
+    def item_block(key,data,depth,html, tags):
         if "hidden" not in data:
             depth += 1
             html += util.fill_template(util.read("templates/item_block_start.html"),{"key":key})
@@ -209,7 +208,7 @@ def parse():
                     #markdown_header += f"{" "*(depth+1)}{item}  \n" # Trophy:
                 elif is_weapon(item_data):
                     item_html, wtags, item_paps, tags = parse_weapon_data(item,item_data,depth,tags)
-                    # Add original item
+                    # item
                     context = {
                         "name": item,
                         "data_item": item_html,
@@ -217,11 +216,36 @@ def parse():
                     }
                     html += util.fill_template(util.read("templates/item_preview.html"), context)
 
+                    # paps
                     html += util.fill_template(item_paps, {"wtags":wtags})
+                elif "weaponkit" in item_data:
+                    item_html, wtags, item_paps, tags = parse_weapon_data(item,item_data,depth,tags)
+                    # kit (has no paps)
+                    context = {
+                        "name": item,
+                        "data_item": item_html,
+                        "wtags": wtags
+                    }
+                    html += util.fill_template(util.read("templates/item_preview.html"), context)
+                    html += f"<div style=\"margin-left: 10px;\">\n"
                     
-                    html_weapondata += item_html
+                    # kit items (has pap)
+                    for k,v in item_data.items():
+                        if is_weapon(v):
+                            item_html, _, item_paps, tags = parse_weapon_data(k,v,depth,tags) # kit items never have tags on their own
+                            # item
+                            context = {
+                                "name": k,
+                                "data_item": item_html,
+                                "wtags": wtags
+                            }
+                            html += util.fill_template(util.read("templates/item_preview.html"), context)
+                            # paps
+                            html += util.fill_template(item_paps, {"wtags":wtags})                            
+                    html += "</div>\n"
+
                 elif item[0].isupper() and is_category(item_data) or "Perks" in item: # unneeded data is always lowercase...
-                    html, html_weapondata, tags = item_block(item, item_data, depth, html, html_weapondata, tags)
+                    html, tags = item_block(item, item_data, depth, html, tags)
                 elif "Trophies" == item: # Item
                     util.log("skipping Trophies entry")
                     #_, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
@@ -229,17 +253,17 @@ def parse():
                     html += item + "\n"
                     #markdown_header += f"{" "*(depth+1)}{item}  \n"
             html += "</details>\n"
-        return html, html_weapondata, tags
+        return html, tags
 
 
     tags = []
     for item_category in CFG_WEAPONS:
         if is_item_category(CFG_WEAPONS[item_category]):
-            HTML_WEAPON, HTML_WEAPONDATA, tags = item_block(item_category,CFG_WEAPONS[item_category],0, HTML_WEAPON, HTML_WEAPONDATA, tags)
+            HTML_WEAPON, tags = item_block(item_category,CFG_WEAPONS[item_category],0, HTML_WEAPON, tags)
     
     #taglist_str = "  \n".join({f" - #{tag}" for tag in tags})
     #HTML_WEAPON = f"**Available tags:** \n{taglist_str}  \n"+HTML_WEAPON
-    tags_html = "".join([f"<div class=\"btn\" onclick=\"filter('{tag}');\">#{tag}</div>" for tag in tags])
+    tags_html = "".join([f"<div class=\"btn\" onclick=\"filter_set_tag('{tag}');\">#{tag}</div>" for tag in tags])
     context = {
         "gtags": tags_html,
         "itemdata": HTML_WEAPON
