@@ -75,7 +75,29 @@ class WeaponPap:
         return f"### {space_header} {self.name} \\[{self.id}\\]  \n{tags}{space}${self.cost}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n{space}{extra_desc.replace("\\n",f"  \n{space}")}  \n"
     
     def to_link(self):
-        return f"{" "*self.depth}{util.to_file_link(self.name, "Weapon_Paps", f"{self.name}-{self.id}", self.depth>0)}  \n"
+        return f"{" "*self.depth}{self.name}  \n"
+    
+    def to_html_preview(self):
+        if len(self.tags)>0: tags = f"{self.tags}"
+        else: tags = ""
+        extra_desc = self.extra_desc if len(self.extra_desc) > 0 else ""
+        desc = get_key(self.description)
+
+        context = {
+            "name": self.name,
+            "tags": tags,
+            "author": "",
+            "cost": f"${self.cost}",
+            "desc": f"<div>{desc.replace("\\n","</div>\n<div>")}</div>\n<div>{extra_desc.replace("\\n","</div>\n<div>")}</div>",
+        }
+        return util.fill_template(util.read("templates/item.html"), context)
+    
+    def to_html(self):
+        context = { # wtags left out intentionally, it is replaced later
+            "name": self.name,
+            "data_item": self.to_html_preview()
+        }
+        return util.fill_template(util.read("templates/item_preview.html"), context)
 
 class WeaponPap_Dummy:
     def __init__(self, init_pap_paths):
@@ -110,30 +132,26 @@ def parse():
         pap_#_papskip Skips a number of paps to choose ("1" skip on "PaP 1" allows you to choose "PaP 3" instead)
         """
         pap_idx = 0
-        pap_md = ""
-        pap_links = ""
-        def item_block(parent_pap,idx,md,links,depth):
+        pap_html = ""
+        def item_block(parent_pap,idx,html,depth):
+            html += f"<div class=\"weapon_pap hidden\" weapon_tags=\"wtags\" style=\"margin-left: {(depth+1)*10}px;\">"
             for i in range(int(parent_pap.pappaths)):
                 idx += 1
                 if int(parent_pap.pappaths)>1:
-                    md += f"## {" "*depth} _Path {i+1}_  \n"
-                    links += f"{" "*depth} _Path {i+1}_  \n"
+                    html += f"<i>Path {i+1}</i>"
                 pd = WeaponPap(weapon_name,weapon_data,idx,depth)
                 if pd.valid:
-                    md += pd.to_md()
-                    links += pd.to_link()
-                    if pd.pappaths!="0": md, links = item_block(pd, idx+int(pd.papskip), md, links,depth+1)
-            return md, links
+                    html += pd.to_html()
+                    if pd.pappaths!="0": html = item_block(pd, idx+int(pd.papskip), html, depth+1)
+            html += "</div>"
+            return html
         
-        pap_md += f"# {weapon_name}  \n{util.to_file_link("Back to weapon", "Item_Data", weapon_name)}  \n"
         if "pappaths" in weapon_data: init_pap_paths = weapon_data["pappaths"]
         else: init_pap_paths = 1
-        pap_links = "**Paps**  \n"
-        pap_md, pap_links = item_block(WeaponPap_Dummy(init_pap_paths), pap_idx, pap_md, pap_links, 0)
-        if pap_links == "**Paps**  \n":
-            pap_md = ""
-            pap_links = ""
-        return pap_md, pap_links
+        pap_html = item_block(WeaponPap_Dummy(init_pap_paths), pap_idx, pap_html, 0)
+        if len(pap_html)>0:
+            pap_html += "\n"
+        return pap_html
 
 
     def parse_weapon_data(weapon_name, weapon_data, depth, gtags):
@@ -154,7 +172,7 @@ def parse():
         if "desc" in weapon_data: 
             k = weapon_data["desc"]
             description = get_key(k)
-            description = description.replace("\\n","</div><div>").replace("<div>-","<div> - ") + "\n"
+            description = description.replace("\\n","</div>\n<div>").replace("\n<div>-","\n<div> - ") + "\n"
             if description.startswith("-"): description=" - "+description[1:]
         else: description = ""
 
@@ -163,7 +181,7 @@ def parse():
         else:
             lvl = ""
 
-        #pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
+        paps_html = interpret_weapon_paps(weapon_name,weapon_data)
         
         #wid = util.id_from_str(weapon_name + description)
         context = {
@@ -171,10 +189,11 @@ def parse():
             "tags": tags,
             "author": author,
             "cost": cost,
-            "desc": f"<div>{lvl}</div><div>{description}</div>",
+            "desc": f"<div>{lvl}</div>\n<div>{description}</div>",
         }
 
-        return util.fill_template(util.read("templates/item.html"), context), tags, gtags
+
+        return util.fill_template(util.read("templates/item.html"), context), tags, paps_html, gtags
         
         #return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{lvl}{description}  \n{pap_links}  ", header, pap_md, gtags
 
@@ -189,13 +208,17 @@ def parse():
                     pass
                     #markdown_header += f"{" "*(depth+1)}{item}  \n" # Trophy:
                 elif is_weapon(item_data):
-                    item_html, wtags, tags = parse_weapon_data(item,item_data,depth,tags)
+                    item_html, wtags, item_paps, tags = parse_weapon_data(item,item_data,depth,tags)
+                    # Add original item
                     context = {
                         "name": item,
-                        "data": item_html,
+                        "data_item": item_html,
                         "wtags": wtags
                     }
                     html += util.fill_template(util.read("templates/item_preview.html"), context)
+
+                    html += util.fill_template(item_paps, {"wtags":wtags})
+                    
                     html_weapondata += item_html
                 elif item[0].isupper() and is_category(item_data) or "Perks" in item: # unneeded data is always lowercase...
                     html, html_weapondata, tags = item_block(item, item_data, depth, html, html_weapondata, tags)
@@ -203,7 +226,7 @@ def parse():
                     util.log("skipping Trophies entry")
                     #_, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
                 elif "whiteout" in item_data: # Text shown in menu
-                    html += item
+                    html += item + "\n"
                     #markdown_header += f"{" "*(depth+1)}{item}  \n"
             html += "</details>\n"
         return html, html_weapondata, tags

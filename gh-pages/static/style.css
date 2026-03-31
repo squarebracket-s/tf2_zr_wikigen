@@ -42,14 +42,14 @@ details details summary { font-size: 1.5em }
 details details details summary { font-size: 1em }
 details details details details summary { font-size: .5em }
 
-h2, .h2 {
-    font-size: 1.5em;
+h1, .h1 {
+    font-size: 2em;
     font-weight: 500;
     font-family: "Oswald";
 }
 
-h1, .h1 {
-    font-size: 2em;
+h2, .h2 {
+    font-size: 1.5em;
     font-weight: 500;
     font-family: "Oswald";
 }
@@ -123,6 +123,10 @@ ul {
 li {
   padding-left: 1em;
   text-indent: -1em;
+}
+
+ul ul {
+    margin-left: 10px;
 }
 
 li:before {
