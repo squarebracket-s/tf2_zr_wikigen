@@ -672,6 +672,7 @@ def parse():
         #        MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
         
         print("len ",len(list(wavesets_json.keys())))
+        if not os.path.isdir("gh-pages/wavesets"): subprocess.run(["mkdir", "gh-pages/wavesets"])
         for f_waveset, f_data in wavesets_json.items():
             util.write(f"gh-pages/wavesets/{filename.split("/")[-1]}_{util.to_section_link(f_waveset)}.json", json.dumps(f_data,indent=2))
 
