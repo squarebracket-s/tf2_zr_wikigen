@@ -653,7 +653,9 @@ def parse():
                 else:
                     desc = ""
                 util.debug(f"Adding waveset {waveset_name} to {filename}","wavesets","OKCYAN")
-                wavesets_json[waveset_name] = parse_waveset(waveset_file, WAVESET_DATA)
+                mn = parse_waveset(waveset_file, WAVESET_DATA)
+                mn["name"] = waveset_name
+                wavesets_json[waveset_name] = mn
         else: # Waveset itself / map_mode | Assume data being in the cfg file itself. See: maps/zr_bossrush.cfg
             # mapset, i.e. only one waveset
             # also add link to its config file in md_mapsets (mapset outline in home.md and sidebar.md)

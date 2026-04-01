@@ -12,18 +12,20 @@ const npc_html = `<div class="wave_npc">
     </div>
 </div>`
 function cycle_wave(val) {
+    let prev_wave = wave;
     wave = wave + val;
     if (wave>max_waves) {wave=max_waves};
     if (wave<1) {wave=1};
-    update_wave_display();
+    if (prev_wave!==wave) { update_wave_display(); }
 }
 
 function set_wave(val) {
+    let prev_wave = wave;
     let as_number = Number(val.replace(/\D/g,""));
     if (as_number>max_waves) {as_number=max_waves};
     if (as_number<1) {as_number=1};
     wave = as_number;
-    update_wave_display();
+    if (prev_wave!==wave) { update_wave_display(); }
 }
 
 async function parse_waveset(file) {
@@ -45,6 +47,7 @@ async function parse_waveset(file) {
 function update_wave_display() {
     const wave_text = document.getElementById("wave_progress_text").getElementsByTagName("input")[0];
     const wave_bar = document.getElementById("wave_progress_bar").getElementsByTagName("div")[0];
+    const waveset_name_inner = document.getElementById("wavesetname");
     wave_text.value = wave;
     wave_bar.style.width = (wave/max_waves)*100 + "%";
 
@@ -53,6 +56,9 @@ function update_wave_display() {
     } else {
         wave_bar.style["border-radius"] = "5px 0px 0px 5px";
     }
+
+    document.title = "ZR Encyclopedia - " + waveset_data["name"]; // TODO always returns undefined
+    waveset_name_inner.innerHTML = waveset_data["name"];
 
     removeElementsByClass("wave_npc");
 
