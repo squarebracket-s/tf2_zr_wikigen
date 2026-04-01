@@ -22,7 +22,7 @@ if "SCOPE" in os.environ:
     SCOPE = [x.lower() for x in os.environ["SCOPE"].split(",")]
 else:
     #SCOPE = ["wavesets", "items", "skilltree"]
-    SCOPE = ["items"]
+    SCOPE = ["wavesets", "items"]
 
 WAVESETS_FILESCOPE = []
 if "FILESCOPE" in os.environ:
