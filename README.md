@@ -1,7 +1,8 @@
 # tf2_zr_wikigen
-Automatic encylopedia generator for https://github.com/artvin01/TF2-Zombie-Riot.
+Automatic encyclopedia generator for https://github.com/artvin01/TF2-Zombie-Riot.  
+The code is currently being rewritten to move the encyclopedia to github pages, allowing for more freedom in displaying parsed info, i.e. adding the ability to filter through the weapon list.
 
-# [Wiki](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki)
+# [GH Pages version (WIP)](https://squarebracket-s.github.io/tf2_zr_wikigen/)
 
 # TODO
 - [ ] Waveset data

@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="static/style.css">
+    <link rel="stylesheet" href="static/items.css">
     <script src="static/items.js" defer></script>
     <title>ZR Encyclopedia - Items</title>
 </head>
 <body>
     <i><a href="/tf2_zr_wikigen/">Back to home</a></i>
     <div id="taglist">
-        <div class="btn btn-active" onclick="filter_set_tag('All');">All</div>
+        <div class="btn btn-active" tabindex="0" onclick="filter_set_tag('All');">All</div>
         gtags
     </div>
     <div id="pap_toggle">
@@ -18,7 +18,7 @@
         <label>Show weapon enhancements</label>
     </div>
     <div id="item_filter">
-        <input type="search" id="item_filter_input" onchange="console.log(this.value);">
+        <input type="search" id="item_filter_input">
     </div>
     itemdata
 </body>

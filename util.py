@@ -32,7 +32,7 @@ WAVESETS_TYPESCOPE = []
 if "TYPESCOPE" in os.environ:
     WAVESETS_TYPESCOPE = [x.title() for x in os.environ["TYPESCOPE"].split(",")]
 else:
-    WAVESETS_TYPESCOPE = ["Setup", "Custom", "Betting", "Rogue"]
+    WAVESETS_TYPESCOPE = ["Setup"] #"Custom", "Betting", "Rogue"]
 
 print("CATEGORIES",CATEGORIES)
 print("SCOPE",SCOPE)
@@ -51,6 +51,18 @@ def md_img(url, alt, width=16):
 def normalize_whitespace(str_):
     return " ".join(str_.split())
 
+
+def to_section_link(str_, pre_h=False):
+    remove = [
+        "&",
+        "[",
+        "]",
+        "'",
+        ","
+    ]
+    for r in remove:
+        str_ = str_.replace(r,"")
+    return f"{"-"*int(pre_h)}{str_.lower().replace(" ","-")}"
 
 def remove_multiline_comments(d): # Fixes the script interpreting the comment in npc_headcrabzombie.sp as actual data
     new_str = ""

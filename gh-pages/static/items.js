@@ -94,6 +94,14 @@ item_filter_text.addEventListener('input', function (evt) {
     filter();
 });
 
+/* Accessibility */
+document.onkeydown = (e) => {
+  if (e.key === "Enter") {
+    document.activeElement.click();
+  }
+};
+
+
 
 /*
 Custom right click modal

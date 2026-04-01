@@ -18,3 +18,4 @@ npc_data_02.json
 gh-pages/*
 !gh-pages/static/
 !gh-pages/index.html
+!gh-pages/waveset_viewer.html

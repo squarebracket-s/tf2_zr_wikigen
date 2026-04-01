@@ -90,14 +90,14 @@ class WeaponPap:
             "cost": f"{self.cost}",
             "desc": f"<div>{desc.replace("\\n","</div>\n<div>")}</div>\n<div>{extra_desc.replace("\\n","</div>\n<div>")}</div>",
         }
-        return util.fill_template(util.read("templates/item.html"), context)
+        return util.fill_template(util.read("templates/items/item.html"), context)
     
     def to_html(self):
         context = { # wtags left out intentionally, it is replaced later
             "name": self.name,
             "data_item": self.to_html_preview()
         }
-        return util.fill_template(util.read("templates/item_preview.html"), context)
+        return util.fill_template(util.read("templates/items/item_preview.html"), context)
 
 class WeaponPap_Dummy:
     def __init__(self, init_pap_paths):
@@ -192,7 +192,7 @@ def parse():
         }
 
 
-        return util.fill_template(util.read("templates/item.html"), context), tags, paps_html, gtags
+        return util.fill_template(util.read("templates/items/item.html"), context), tags, paps_html, gtags
         
         #return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{lvl}{description}  \n{pap_links}  ", header, pap_md, gtags
 
@@ -200,7 +200,7 @@ def parse():
     def item_block(key,data,depth,html, tags):
         if "hidden" not in data:
             depth += 1
-            html += util.fill_template(util.read("templates/item_block_start.html"),{"key":key})
+            html += util.fill_template(util.read("templates/items/item_block_start.html"),{"key":key})
             for item in data:
                 item_data = data[item]
                 if is_trophy(item_data):
@@ -214,7 +214,7 @@ def parse():
                         "data_item": item_html,
                         "wtags": wtags
                     }
-                    html += util.fill_template(util.read("templates/item_preview.html"), context)
+                    html += util.fill_template(util.read("templates/items/item_preview.html"), context)
 
                     # paps
                     html += util.fill_template(item_paps, {"wtags":wtags})
@@ -226,7 +226,7 @@ def parse():
                         "data_item": item_html,
                         "wtags": wtags
                     }
-                    html += util.fill_template(util.read("templates/item_preview.html"), context)
+                    html += util.fill_template(util.read("templates/items/item_preview.html"), context)
                     html += f"<div style=\"margin-left: 10px;\">\n"
                     
                     # kit items (has pap)
@@ -239,7 +239,7 @@ def parse():
                                 "data_item": item_html,
                                 "wtags": wtags
                             }
-                            html += util.fill_template(util.read("templates/item_preview.html"), context)
+                            html += util.fill_template(util.read("templates/items/item_preview.html"), context)
                             # paps
                             html += util.fill_template(item_paps, {"wtags":wtags})                            
                     html += "</div>\n"
@@ -263,9 +263,9 @@ def parse():
     
     #taglist_str = "  \n".join({f" - #{tag}" for tag in tags})
     #HTML_WEAPON = f"**Available tags:** \n{taglist_str}  \n"+HTML_WEAPON
-    tags_html = "".join([f"<div class=\"btn\" onclick=\"filter_set_tag('{tag}');\">#{tag}</div>" for tag in tags])
+    tags_html = "".join([f"<div class=\"btn\" tabindex=\"0\" onclick=\"filter_set_tag('{tag}');\">#{tag}</div>" for tag in tags])
     context = {
         "gtags": tags_html,
         "itemdata": HTML_WEAPON
     }
-    util.write("gh-pages/items.html", util.fill_template(util.read("templates/items.html"), context))
+    util.write("gh-pages/items.html", util.fill_template(util.read("templates/items/items.html"), context))

@@ -387,8 +387,8 @@ def parse():
             return f"# {data["image"].replace("16","32") if data["image"]!="" else ""} {data["name"]}  \n_{plugin}_  \n{npc_health}{npc_flags}{npc_data.description}  \n"
         return ""
 
-    def parse_wave(wave_data, md_npc, is_betting=False, force=False):
-        md_new = ""
+    def parse_wave(wave_data, is_betting=False, force=False):
+        output = []
         if is_betting:
             md_new = "| Budget | NPC |\n| --- | --- |\n"
         for wave_entry in wave_data:
@@ -396,6 +396,7 @@ def parse():
             try:
                 float(wave_entry)
             except ValueError:
+                continue # TODO
                 if wave_entry.startswith("music_"):
                     if (mdata := util.music_modal(wave_entry_data)): md_new += mdata
                 
@@ -529,10 +530,10 @@ def parse():
                 else:
                     image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","D")
                 
-                if npc_data.category != "Type_Hidden":
+                if npc_data.category != "Type_Hidden" and False: # No longer needed. TODO remove npc info on hover if hidden
                     display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
                     # Add NPC if not hidden & doesn't exist already
-                    md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image}) 
+                    #md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image}) 
             else:
                 image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","E")
                 
@@ -556,24 +557,34 @@ def parse():
                 # For first table val: int("1.0") -> ValueError | int(float("1.0")) -> 1
                 md_new += f"| {int(float(wave_entry))} | {count} {image if image!="" else ""} {npc_name_prefix} {display_name} {extra_info} |  \n"
             else:
-                md_new += f"{count} {image if image else ""} {npc_name_prefix} {display_name} {extra_info}  \n"
+                output.append(
+                    {
+                        "count": count,
+                        "img": image if image else "",
+                        "prefix": npc_name_prefix,
+                        "display_name": display_name,
+                        "extra_info": extra_info
+                    }
+                )
         
-        return md_new, md_npc
+        return output
     
-    def parse_waveset(name, data, md_wavesets, md_npc, DEPTH=2):
+    def parse_waveset(name, data, DEPTH=2):
         global waveset_cache
         if name in waveset_cache:
             util.debug(f"    -> Returning cache for {name}", "waveset", "OKCYAN")
-            md_wavesets += waveset_cache[name]
-            return md_wavesets, md_npc
+            return waveset_cache[name]
         
         wd = defaultdict(str,data)
-        md_new = ""
-        a_npc = f"NPCs by: {wd["author_npcs"]}  \n" if wd["author_npcs"] != "" else ""
-        a_format = f"Format by: {wd["author_format"]}  \n" if wd["author_format"] != "" else ""
-        a_raid = f"Raidboss by: {wd["author_raid"]}  \n" if wd["author_raid"] != "" else ""
-        complete_item = f"Item on win: {wd["complete_item"]}  \n" if wd["complete_item"] != "" else ""
-        md_new += f"{a_npc}{a_format}{a_raid}{complete_item}"
+        output = {
+            "waves": {},
+            "authors": {
+                "npc": wd["author_npcs"],
+                "format": wd["author_format"],
+                "raid": wd["author_raid"]
+            },
+            "item_on_win": wd["complete_item"]
+        }
         
         wave_idx = 0
         for wave in data:
@@ -581,8 +592,9 @@ def parse():
             try:
                 int(wave)
             except ValueError:
-                if wave.startswith("music_"):
-                    if (mdata := util.music_modal(wave_data)): md_new += mdata
+                continue
+                if wave.startswith("music_") and False:
+                    if (mdata := util.music_modal(wave_data)): output += mdata
                 continue
 
             wave_npc_amt = sum([int(util.is_float(entry)) for entry in wave_data])
@@ -591,34 +603,35 @@ def parse():
 
             abovelimit = False if "fakemaxwaves" not in wd else wave_idx > int(wd["fakemaxwaves"]) # If wave number is above specified max fake limit
 
-            mn, md_npc = parse_wave(wave_data, md_npc)
-            md_new += f"{"#"*DEPTH} {wave_idx}  \n{mn}" # marking in headers does not work in github markdown!! TODO
+            output["waves"][wave_idx] = parse_wave(wave_data)
         
-        waveset_cache[name] = md_new
-        md_wavesets += md_new
-        return md_wavesets, md_npc
+        waveset_cache[name] = output
+        return output
     
-    def parse_waveset_list_cfg_common(cfg, filename, md_npc, md_mapsets):
+    def parse_waveset_list_cfg_common(cfg, filename, md_mapsets):
         map_mode = "maps" in filename # Is map specific config?
         WAVESET_LIST = cfg[list(cfg.keys())[0]] # data of cfg file
         if "Setup" in WAVESET_LIST: WAVESET_LIST = WAVESET_LIST["Setup"] # map-specific configs start with custom instead of setup, requiring an extra step to get to waveset/wave< data
         if "Setup" in WAVESET_LIST: WAVESET_LIST = WAVESET_LIST["Setup"] # zr_bossrush
 
-        MARKDOWN_WAVESETS = f"Starting cash: ${WAVESET_LIST["cash"]}  \n"
-        
+        wavesetlist_html = ""
+        wavesets_json = {}
+
         if "Waves" in WAVESET_LIST: # list of wavesets
             wavesets = WAVESET_LIST["Waves"]
             # Outline
             if len(wavesets)>1:
-                MARKDOWN_WAVESETS += "# Wavesets  \n"
+                wavesetlist_html += "<ul>\n"
                 for waveset_name in wavesets:
-                    MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
+                    wavesetlist_html += f"<li><a href=\"\">{waveset_name}</li>\n"
+                wavesetlist_html += "</ul>\n"
 
             # Modifier outline
-            if "Modifiers" in WAVESET_LIST:
-                MARKDOWN_WAVESETS += f"# Modifiers  \n"
-                for modifiers in WAVESET_LIST["Modifiers"]:
-                    MARKDOWN_WAVESETS += f"- [{modifiers}](#{util.to_section_link(modifiers)})  \n"    
+            # TODO
+            #if "Modifiers" in WAVESET_LIST:
+            #    MARKDOWN_WAVESETS += f"# Modifiers  \n"
+            #    for modifiers in WAVESET_LIST["Modifiers"]:
+            #        MARKDOWN_WAVESETS += f"- [{modifiers}](#{util.to_section_link(modifiers)})  \n"    
             
             # Data
             for waveset_name in wavesets:
@@ -640,10 +653,7 @@ def parse():
                 else:
                     desc = ""
                 util.debug(f"Adding waveset {waveset_name} to {filename}","wavesets","OKCYAN")
-                MARKDOWN_WAVESETS += f"# {waveset_name}  \n{"[Back to top](#wavesets)  \n" * int(not map_mode)}{desc}  \n"
-                lb = len(MARKDOWN_WAVESETS)
-                MARKDOWN_WAVESETS, md_npc = parse_waveset(waveset_file, WAVESET_DATA, MARKDOWN_WAVESETS, md_npc)
-                util.debug(f"{filename} waveset markdown lendiff {abs(len(MARKDOWN_WAVESETS)-lb)}","wavesets","OKCYAN")
+                wavesets_json[waveset_name] = parse_waveset(waveset_file, WAVESET_DATA)
         else: # Waveset itself / map_mode | Assume data being in the cfg file itself. See: maps/zr_bossrush.cfg
             # mapset, i.e. only one waveset
             # also add link to its config file in md_mapsets (mapset outline in home.md and sidebar.md)
@@ -652,16 +662,25 @@ def parse():
         
         if map_mode: 
             n = filename.split("/")[-1].replace(".cfg","")
-            md_mapsets += f"- [{n}]({n})  \n"
+            #md_mapsets += f"- [{n}]({n})  \n"
         
         # Modifiers title and desc
-        if "Modifiers" in WAVESET_LIST:
-            for modifier in WAVESET_LIST["Modifiers"]:
-                data = WAVESET_LIST["Modifiers"][modifier]
-                desc = get_key(data["desc"]).replace("\\n","  \n")
-                MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
+        #if "Modifiers" in WAVESET_LIST:
+        #    for modifier in WAVESET_LIST["Modifiers"]:
+        #        data = WAVESET_LIST["Modifiers"][modifier]
+        #        desc = get_key(data["desc"]).replace("\\n","  \n")
+        #        MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
         
-        return MARKDOWN_WAVESETS, md_npc, md_mapsets
+        print("len ",len(list(wavesets_json.keys())))
+        for f_waveset, f_data in wavesets_json.items():
+            util.write(f"gh-pages/wavesets/{filename.split("/")[-1]}_{util.to_section_link(f_waveset)}.json", json.dumps(f_data,indent=2))
+
+        context = { # startcash, wavesetlist
+            "startcash": WAVESET_LIST["cash"],
+            "wavesetlist": wavesetlist_html
+        }
+        HTML_WAVESET_LIST = util.fill_template(util.read("templates/waveset/waveset_list.html"),context)
+        return HTML_WAVESET_LIST, md_mapsets
 
     def parse_waveset_list_cfg(filename, md_npc, md_mapsets, filename_md=None):
         if (filename not in util.WAVESETS_FILESCOPE) and len(util.WAVESETS_FILESCOPE)>0:
@@ -693,8 +712,7 @@ def parse():
         """
 
         if WAVESETLIST_TYPE in ["Setup", "Custom"]:
-            # TODO global MARKDOWN_WAVESETS
-            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, md_npc, md_mapsets)
+            MARKDOWN_WAVESETS, md_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, md_mapsets)
         elif WAVESETLIST_TYPE == "Betting":
             MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_RAW, md_npc, md_mapsets)
         elif WAVESETLIST_TYPE == "Rogue":
@@ -705,19 +723,12 @@ def parse():
 
         if not filename_md:
             if "maps" in filename:
-                filename_md = filename.split("/")[-1].replace(".cfg","") + ".md"
-                display_name = filename_md
+                filename_md = f"gh-pages/{filename.split("/")[-1].replace(".cfg","")}.html"
             else:
-                filename_md = f"wavesets_{filename}.md".replace("/","_")
-                disp = filename.replace(".cfg","").replace("_"," ").replace("/"," ")
-                disp_title = disp.replace("'","~").title().replace("~","'") # https://stackoverflow.com/a/1549644
-                display_name = f"{disp_title}.md"
-        else:
-            display_name = filename_md
+                filename_md = f"gh-pages/wavesets_{filename}.md".replace("/","_")
         
-        generated_files[filename_md] = display_name
         util.write(filename_md, MARKDOWN_WAVESETS)
-        return md_npc, md_mapsets
+        return md_mapsets
     
     #### ZR: Special Maps ####
     def parse_betting(name, data_raw, md_npc, md_mapsets): # zr_bettingwars
@@ -811,16 +822,16 @@ def parse():
     NPCS_BY_FILENAME = parse_all_npcs()
 
     cfg_files = {
-        "classic.cfg": "ZR: Survival.md",
-        "fastmode.cfg": "ZR: Raidrush.md",
-        "fastmode_redsun.cfg": "ZR: Raidrush (redsun.tf).md", 
+        "classic.cfg": "gh-pages/survival.html",
+        "fastmode.cfg": "gh-pages/raidrush.html",
+    #    "fastmode_redsun.cfg": "ZR: Raidrush (redsun.tf).md", #raiden only so eh
     }
     for file in os.listdir("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/maps/"):
         if ".cfg" in file:
             cfg_files[f"maps/{file}"] = None
 
     for f in cfg_files.keys():
-        MARKDOWN_NPCS, MARKDOWN_MAPSETS = parse_waveset_list_cfg(f, MARKDOWN_NPCS, MARKDOWN_MAPSETS, filename_md=cfg_files[f])
+        MARKDOWN_MAPSETS = parse_waveset_list_cfg(f, MARKDOWN_NPCS, MARKDOWN_MAPSETS, filename_md=cfg_files[f])
 
     # Get current commit SHA for TF2-Zombie-Riot
     COMMIT_SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
@@ -828,7 +839,7 @@ def parse():
 
     PARSE_RUN_INFO = f"\n<sub>Code parsed at {util.datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')} H:M:S D.M.Y {time.tzname[time.daylight]}</sub>  \n<sub>Source repository commit [artvin01/TF2-Zombie-Riot@`{COMMIT_SHA_SHORT}`](https://github.com/artvin01/TF2-Zombie-Riot/commit/{COMMIT_SHA})</sub>"
 
-    util.write("npcs.md", MARKDOWN_NPCS)
-    util.write("sidebar.md", util.read("wiki/sidebar.md")+MARKDOWN_MAPSETS)
-    util.write("home.md", util.read("wiki/home.md")+MARKDOWN_MAPSETS+PARSE_RUN_INFO)
+    #util.write("npcs.md", MARKDOWN_NPCS)
+    #util.write("sidebar.md", util.read("wiki/sidebar.md")+MARKDOWN_MAPSETS)
+    #util.write("home.md", util.read("wiki/home.md")+MARKDOWN_MAPSETS+PARSE_RUN_INFO)
     return generated_files
