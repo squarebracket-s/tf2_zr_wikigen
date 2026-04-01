@@ -36,6 +36,7 @@ async function parse_waveset(file) {
 
         waveset_data = await response.json();
         console.log("Fetched "+waveset_file);
+        update_wave_display();
     } catch (error) {
         console.error(error.message);
     }
@@ -75,7 +76,7 @@ for (let pair of queryString.entries()) {
 
 
 function fill_template(temp, cont) {
-    for (let pair of cont.entries()) {
+    for (let pair of Object.entries(cont)) {
         temp = temp.replace(pair[0],pair[1]);
     }
     return temp
