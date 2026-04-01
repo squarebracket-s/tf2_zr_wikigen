@@ -2,8 +2,9 @@
 Automatic encylopedia generator for https://github.com/artvin01/TF2-Zombie-Riot.
 
 # [Wiki](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki)
+# [GH Pages version (WIP)](https://squarebracket-s.github.io/tf2_zr_wikigen/)
 
-# TODO
+# TODO (wiki branch)
 - [x] Waveset data
   - [x] Parsing multiple configs
   - [x] List config modifiers
