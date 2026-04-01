@@ -61,7 +61,7 @@ function update_wave_display() {
         const context = {
             "npcimg": npc["img"],
             "npccount": npc["count"],
-            "npcdata": npc["prefix"] + npc["display_name"] + "<br>" + npc["extra_info"]
+            "npcdata": "<h2>" + npc["prefix"] + npc["display_name"] + "</h2>" + npc["extra_info"]
         }
         container.innerHTML += fill_template(npc_html, context);
     });

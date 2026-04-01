@@ -454,7 +454,7 @@ def parse():
             String spawn ?
             )
             """
-            count = "always 1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
+            count = "1!" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
             
             if wave_entry_data["plugin"] in NPCS_BY_FILENAME:
                 npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
