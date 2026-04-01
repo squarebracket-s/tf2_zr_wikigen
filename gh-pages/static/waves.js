@@ -57,7 +57,7 @@ function update_wave_display() {
         wave_bar.style["border-radius"] = "5px 0px 0px 5px";
     }
 
-    document.title = "ZR Encyclopedia - " + waveset_data["name"]; // TODO always returns undefined
+    document.title = "ZR Encyclopedia - " + waveset_data["name"];
     waveset_name_inner.innerHTML = waveset_data["name"];
 
     removeElementsByClass("wave_npc");

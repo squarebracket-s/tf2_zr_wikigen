@@ -367,7 +367,7 @@ def parse():
             w = w.format(*(" "*i + delay_str for i in range(delay_count)))
         return w
     
-    def add_npc(plugin, data):
+    def add_npc(plugin, data): # Deprecated
         if plugin not in added_npc_ids:
             added_npc_ids.append(plugin)
             npc_data = NPCS_BY_FILENAME[plugin]
@@ -386,6 +386,29 @@ def parse():
                 npc_flags = ""
             return f"# {data["image"].replace("16","32") if data["image"]!="" else ""} {data["name"]}  \n_{plugin}_  \n{npc_health}{npc_flags}{npc_data.description}  \n"
         return ""
+
+    def get_npc(plugin, data):
+        added_npc_ids.append(plugin)
+        npc_data = NPCS_BY_FILENAME[plugin]
+        if type(npc_data.health) == dict:
+            npc_health = ""
+            for k,v in npc_data.health.items():
+                npc_health += f"{k.capitalize()}: {v}HP"
+        else:
+            npc_health = f"Default health: {npc_data.health}  \n" if npc_data.health != "" else ""
+        npc_cat = f"Category: {npc_data.category}  \n" if npc_data.category != "" else ""
+        if "0" not in npc_data.flags and "-1" not in npc_data.flags:
+            npc_flags = "Flags: "
+            dflags = ", ".join([FLAG_MAPPINGS[item] for item in npc_data.flags])
+            npc_flags += dflags + "  \n"
+        else:
+            npc_flags = ""
+        return {
+            "plugin": plugin,
+            "default_health": npc_health,
+            "flags": npc_flags,
+            "description": npc_data.description
+        }
 
     def parse_wave(wave_data, is_betting=False, force=False):
         output = []
@@ -530,9 +553,10 @@ def parse():
                 else:
                     image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","D")
                 
-                if npc_data.category != "Type_Hidden" and False: # No longer needed. TODO remove npc info on hover if hidden
-                    display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
+                if npc_data.category != "Type_Hidden": # No longer needed. TODO remove npc info on hover if hidden
+                    #display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
                     # Add NPC if not hidden & doesn't exist already
+                    extra_info += "<br>\n"+get_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image})["description"] # TODO use flags for different icon looks
                     #md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image}) 
             else:
                 image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","E")
