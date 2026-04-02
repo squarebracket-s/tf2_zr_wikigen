@@ -19,6 +19,3 @@ gh-pages/*
 gh-pages/index.html
 !gh-pages/static/
 !gh-pages/waveset_viewer.html
-
-#tmp
-embed.py

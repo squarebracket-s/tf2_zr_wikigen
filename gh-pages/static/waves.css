@@ -95,6 +95,16 @@ h3, .h3 {
     transition: 0.5s;
 }
 
+#wave_embed_link {
+    margin-left: 1em;
+    width: 16px;
+    opacity: 0.5;
+}
+
+#wave_embed_link:hover {
+    opacity: 0.75;
+}
+
 .wave_btn {
     font-family: "Oswald";
     background-color: var(--bg-light);

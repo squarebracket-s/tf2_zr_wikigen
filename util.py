@@ -54,6 +54,10 @@ def normalize_whitespace(str_):
     return " ".join(str_.split())
 
 
+def absolute_link(filename, waveset):
+    return f"{filename.split("/")[-1]}_{to_section_link(waveset)}"
+
+
 def format_num(n):
     try:
         return format(int(n), ",").replace(",", ".")
@@ -61,8 +65,10 @@ def format_num(n):
         log(f"[format_num] Invalid input '{n}'!", "FAIL")
         return f"<span style=\"color:red;\">{n}</span>"
 
+
 def to_section_link(str_):
     return sub(r'[^a-z0-9]', '', str_.lower())
+
 
 def remove_multiline_comments(d): # Fixes the script interpreting the comment in npc_headcrabzombie.sp as actual data
     new_str = ""

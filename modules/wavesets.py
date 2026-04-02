@@ -1,5 +1,5 @@
 # Parse all NPCs & Wavesets (Normal & Custom, wavesets like Construction are yet to be supported.)
-import util, os, subprocess, pathlib, vtf2img, json, time
+import util, os, subprocess, pathlib, vtf2img, json, time, embed
 from collections import defaultdict
 from keyvalues1 import KeyValues1
 from requests.structures import CaseInsensitiveDict
@@ -575,11 +575,11 @@ def parse():
         
         return output
     
-    def parse_waveset(name, data, DEPTH=2):
+    def parse_waveset(file, data, abslink, name, desc, DEPTH=2):
         global waveset_cache
-        if name in waveset_cache:
-            util.debug(f"    -> Returning cache for {name}", "waveset", "OKCYAN")
-            return waveset_cache[name]
+        if file in waveset_cache:
+            util.debug(f"    -> Returning cache for {file}", "waveset", "OKCYAN")
+            return waveset_cache[file]
         
         wd = defaultdict(str,data)
         output = {
@@ -593,6 +593,16 @@ def parse():
         }
         
         wave_idx = 0
+
+        max_waves = 0
+        for wave in data:
+            try:
+                int(wave)
+            except ValueError:
+                continue
+            max_waves=max(int(wave),max_waves)
+        assert max_waves!=0
+
         for wave in data:
             wave_data = data[wave]
             try:
@@ -610,8 +620,18 @@ def parse():
             abovelimit = False if "fakemaxwaves" not in wd else wave_idx > int(wd["fakemaxwaves"]) # If wave number is above specified max fake limit
 
             output["waves"][wave_idx] = parse_wave(wave_data)
+            wlink = f"{abslink}_{wave_idx}"
+            embed.generate_waveset_embed(wlink, name, int(wave), max_waves, output["waves"][wave_idx])
+            context = {
+                "WAVESETNAME": name,
+                "WAVESETDESC": desc,
+                "WAVESETFILENAME": abslink,
+                "WAVENUM": str(wave_idx),
+                "WLINK": wlink
+            }
+            util.write(f"gh-pages/embed/{wlink}.html", util.fill_template(util.read("templates/waveset/embed.html"),context))
         
-        waveset_cache[name] = output
+        waveset_cache[file] = output
         return output
     
     def parse_waveset_list_cfg_common(cfg, filename, html_mapsets):
@@ -629,7 +649,7 @@ def parse():
             if len(wavesets)>1:
                 wavesetlist_html += "<ul>\n"
                 for waveset_name in wavesets:
-                    link = f"{filename.split("/")[-1]}_{util.to_section_link(waveset_name)}.json"
+                    link = f"{util.absolute_link(filename,waveset_name)}.json"
                     wavesetlist_html += f"<li><a href=\"waveset_viewer.html?w={link}\">{waveset_name}</li>\n"
                 wavesetlist_html += "</ul>\n"
                 if map_mode: 
@@ -639,7 +659,7 @@ def parse():
                 if map_mode: 
                     waveset_name = list(wavesets.keys())[0]
                     n = filename.split("/")[-1].replace(".cfg","")
-                    link = f"{filename.split("/")[-1]}_{util.to_section_link(waveset_name)}.json"
+                    link = f"{util.absolute_link(filename,waveset_name)}.json"
                     html_mapsets += f"<li><a href=\"waveset_viewer.html?w={link}\">{n} - {waveset_name}</li>\n"
                 else:
                     util.log(f"{filename} - Only one waveset but not in maps/ dir","FAIL")
@@ -672,7 +692,7 @@ def parse():
                 else:
                     desc = ""
                 util.debug(f"Adding waveset {waveset_name} to {filename}","wavesets","OKCYAN")
-                mn = parse_waveset(waveset_file, WAVESET_DATA)
+                mn = parse_waveset(waveset_file, WAVESET_DATA, util.absolute_link(filename,waveset_name), waveset_name, desc)
                 mn["name"] = waveset_name
                 wavesets_json[waveset_name] = mn
         else: # Waveset itself / map_mode | Assume data being in the cfg file itself. Might only be the case for rogue/const/bettingwars
@@ -688,7 +708,7 @@ def parse():
         
         if not os.path.isdir("gh-pages/wavesets"): subprocess.run(["mkdir", "gh-pages/wavesets"])
         for f_waveset, f_data in wavesets_json.items():
-            util.write(f"gh-pages/wavesets/{filename.split("/")[-1]}_{util.to_section_link(f_waveset)}.json", json.dumps(f_data,indent=2))
+            util.write(f"gh-pages/wavesets/{util.absolute_link(filename,f_waveset)}.json", json.dumps(f_data,indent=2))
 
         context = { # startcash, wavesetlistdata
             "startcash": WAVESET_LIST["cash"],
@@ -827,6 +847,8 @@ def parse():
 
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
 
+    if not os.path.isdir("gh-pages/embed"): subprocess.run(["mkdir", "gh-pages/embed"])
+    if not os.path.isdir("gh-pages/waveset_embeds"): subprocess.run(["mkdir", "gh-pages/waveset_embeds"])
     if not os.path.isdir("repo_img"): subprocess.run(["mkdir", "repo_img"])
 
     util.log("Parsing NPCs...")
