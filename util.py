@@ -52,6 +52,9 @@ def normalize_whitespace(str_):
     return " ".join(str_.split())
 
 
+def format_num(n):
+    return format(int(n), ",").replace(",", ".")
+
 def to_section_link(str_):
     remove = [
         "&",

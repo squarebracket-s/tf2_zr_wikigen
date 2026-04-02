@@ -109,7 +109,7 @@ h3, .h3 {
     cursor: pointer;
 }
 
-.wave_btn:hover, .wave_btn:focus {
+.wave_btn:hover {
     background-color: hsl(from var(--bg-light) h s 50%);
 }
 

@@ -135,7 +135,7 @@ class NPC:
 
             if num in npc_vars_dict:
                 util.debug(f"[X] {self.path} var {num}", "npc")
-                return npc_vars_dict[num]
+                return util.format_num(npc_vars_dict[num])
             else:
                 util.debug(f"[ ] {self.path} var {num}", "npc")
                 return "?"
@@ -457,7 +457,7 @@ def parse():
             String spawn ?
             )
             """
-            count = "1!" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
+            count = "<b>1</b>" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
             
             if wave_entry_data["plugin"] in NPCS_BY_FILENAME:
                 npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
@@ -478,7 +478,7 @@ def parse():
             """
             extra_info = ""
             if "health" in wave_entry_data:
-                extra_info += f" {format(int(wave_entry_data["health"]), ",").replace(",", ".")}HP"
+                extra_info += f" {util.format_num(wave_entry_data["health"])}HP"
             elif npc_data:
                 if type(npc_data.health) == dict:
                     if "data" in wave_entry_data:
@@ -499,7 +499,8 @@ def parse():
                         h = f" {npc_data.health[data_key.lower()]}"
                     else:
                         h = npc_data.health["default"]
-                    extra_info += f" {h}HP"
+                    
+                    extra_info += f" {util.format_num(h)}HP"
                 else:
                     extra_info += f" {npc_data.health}"
             else:
@@ -530,9 +531,9 @@ def parse():
                     elif os.path.isfile(premedia_npc_icon_path):
                         image = util.md_img(premedia_npc_icon_path,"B")
                     else:
-                        image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","C")
+                        image = util.md_img("./builtin_img/missing.png","C")
                 else:
-                    image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","D")
+                    image = util.md_img("./builtin_img/missing.png","D")
                 
                 if npc_data.category != "Type_Hidden": # No longer needed. TODO remove npc info on hover if hidden
                     #display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
@@ -555,7 +556,7 @@ def parse():
                     if float(percent_text).is_integer():
                         percent_text = int(percent)
 
-                    extra_info += f" `{char}` {percent_text}％"
+                    extra_info += f" {char} {percent_text}％"
 
             # Add NPC to wave data   
             if is_betting:

@@ -37,6 +37,8 @@ async function parse_waveset(file) {
         }
 
         waveset_data = await response.json();
+        max_waves = Object.keys(waveset_data["waves"]).reduce((a, b) => Number(a) > Number(b) ? a : b);
+        console.log("Max waves:"+max_waves);
         console.log("Fetched "+waveset_file);
         update_wave_display();
     } catch (error) {
@@ -57,9 +59,11 @@ document.getElementById('wave_progress_bar').onclick = function(e) {
 function update_wave_display() {
     window.history.replaceState('', '', updateURLParameter(window.location.href, "wv", String(wave)));
     const wave_text = document.getElementById("wave_progress_text").getElementsByTagName("input")[0];
+    const max_wave_text = document.getElementById("wave_progress_text").getElementsByTagName("span")[0];
     const wave_bar = document.getElementById("wave_progress_bar").getElementsByTagName("div")[0];
     const waveset_name_inner = document.getElementById("wavesetname");
     wave_text.value = wave;
+    max_wave_text.innerHTML = max_waves;
     wave_bar.style.width = (wave/max_waves)*100 + "%";
 
     if (wave===max_waves) {
@@ -71,17 +75,17 @@ function update_wave_display() {
     document.title = "ZR Encyclopedia - " + waveset_data["name"];
     waveset_name_inner.innerHTML = waveset_data["name"];
 
-    removeElementsByClass("wave_npc");
-
     const container = document.getElementById("npc_container");
+    let new_html = ""
     waveset_data["waves"][String(wave)].forEach(function (npc, _) {
         const context = {
             "npcimg": npc["img"],
             "npccount": npc["count"],
             "npcdata": "<h2>" + npc["prefix"] + npc["display_name"] + "</h2>" + npc["extra_info"]
         }
-        container.innerHTML += fill_template(npc_html, context);
+        new_html += fill_template(npc_html, context);
     });
+    container.innerHTML = new_html
 }
 
 function fill_template(temp, cont) {
@@ -89,15 +93,6 @@ function fill_template(temp, cont) {
         temp = temp.replace(pair[0],pair[1]);
     }
     return temp
-}
-
-// https://stackoverflow.com/questions/4777077/removing-elements-by-class-name
-// I was too lazy :P
-function removeElementsByClass(className){
-    const elements = document.getElementsByClassName(className);
-    while(elements.length > 0){
-        elements[0].parentNode.removeChild(elements[0]);
-    }
 }
 
 // http://stackoverflow.com/a/10997390/11236
