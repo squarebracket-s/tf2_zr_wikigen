@@ -52,7 +52,7 @@ def normalize_whitespace(str_):
     return " ".join(str_.split())
 
 
-def to_section_link(str_, pre_h=False):
+def to_section_link(str_):
     remove = [
         "&",
         "[",
@@ -62,7 +62,7 @@ def to_section_link(str_, pre_h=False):
     ]
     for r in remove:
         str_ = str_.replace(r,"")
-    return f"{"-"*int(pre_h)}{str_.lower().replace(" ","-")}"
+    return f"{str_.lower().replace(" ","")}"
 
 def remove_multiline_comments(d): # Fixes the script interpreting the comment in npc_headcrabzombie.sp as actual data
     new_str = ""

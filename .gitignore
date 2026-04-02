@@ -16,6 +16,6 @@ npc_data_02.json
 *.cfg
 
 gh-pages/*
+gh-pages/index.html
 !gh-pages/static/
-!gh-pages/index.html
 !gh-pages/waveset_viewer.html

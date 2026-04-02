@@ -85,67 +85,10 @@ h3, .h3 {
     cursor: default;
 }
 
-/* Search */
-#item_filter, #pap_toggle {
-    width: 100%;
-    justify-content: center;
-    display: flex;
-    padding: 10px;
-}
-input[type=search] {
-    width: 50%;
-    border: 0px;
-
-    /* Icon */
-    background-image: url("search.svg");
-    background-size: 13px;
-    background-repeat: no-repeat;
-    background-position: 10px center;
-
-    /* .btn styling */
-    background-color: var(--bg-light);
-    color: var(--deep-space-blue);
-    padding: 10px 10px 10px 30px;
-    margin: 5px;
-    user-select: none;
-    cursor: text;
-}
-
-/* Item Previews */
-.hover {
-    display: table;
-    position: relative;
-    color: var(--link-dark);
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.hover:hover, .hover:focus {
-    color: hsl(from var(--link-dark) h s 80%);
-}
-
-.tooltip {
-  z-index: 1;
-  height: max-content;
-  width: max-content;
-  top: 110%;
-  left: 0;
-  border-radius: 5px;
-  opacity: 0;
-  position: absolute;
-  transition: 0.25s;
-  pointer-events: none;
-  padding-top: 25px;
-  padding-bottom: 25px;
-  padding-left: 35px;
-  padding-right: 35px;
-  background-color: var(--bg-light);
-  color: var(--deep-space-blue);
-}
-
-.hover:hover .tooltip, .hover:focus .tooltip {
-    opacity:1;
-    top: 125%;
+.disabled {
+    cursor: default;
+    pointer-events: none;
+    opacity: 0.6;
 }
 
 /* swap out dots in lists */
@@ -170,24 +113,8 @@ li:before {
   padding-right: 5px;
 }
 
-/* weapon content */
 .hidden {
     display:none;
-}
-
-.money:before {
-    content: "$";
-}
-
-.money {
-    color: rgb(83, 123, 22);
-}
-
-#taglist {
-    display: flex;
-    width: 100%;
-    padding: 10px;
-    flex-wrap:wrap;
 }
 
 .btn {
@@ -207,119 +134,6 @@ li:before {
     background-color: hsl(from var(--bg-light) h s 45%);
 }
 
-/* Wavesets */
-#waveset_data_bg {
-    margin-top: 2em;
-    /*padding-bottom: 1.5em; */ /* normal */
-    padding-bottom: 2.5em; /* adjusted for wave npc count */
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    background-color: hsl(from var(--bg-dark) h s 25%);
-    border-radius: 5px;
-    /*align-items: center; */ /* align vertically */
-}
-
-#wave_progress_bar {
-    width: 80%;
-    height: 25px;
-    background: var(--ivory);
-    border-radius: 5px;
-    border-color: var(--deep-space-blue);
-    border-style: solid;
-    border-width: 1px;
-    display: flex;
-    align-items: center;
-    margin: 5px;
-}
-
-#wave_progress_bar div {
-    background: var(--link-dark);
-    margin-left: 2px;
-    margin-right: 2px;
-    width: 2.5%; /* 2.5% => Wave 1 (1/40 * 100) */
-    height: 85%;
-    border-radius: 5px 0px 0px 5px;
-    z-index: 1;
-    transition: 0.5s;
-}
-
-.wave_btn {
-    font-family: "Oswald";
-    background-color: var(--bg-light);
-    color: var(--deep-space-blue);
-    display: flex;
-    align-items: center;
-    margin: 5px;
-    padding: 5px;
-    height: 15px;
-    border-radius: 2px;
-    user-select: none;
-    cursor: pointer;
-}
-
-.wave_btn:hover, .wave_btn:focus {
-    background-color: hsl(from var(--bg-light) h s 50%);
-}
-
-.wave_npc {
-    width: 48px;
-    height: 48px;
-    background-color: var(--ivory);
-    border-radius: 5px;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    position: relative;
-}
-
-.wave_npc img {
-    width: 90%;
-    height: 90%;
-}
-.wave_npc_count {
-    position: absolute;
-    top: 48px;
-    margin-top: 5px;
-}
-
-/* Chrome, Safari, Edge, Opera */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Firefox */
-input[type=number] {
-  -moz-appearance: textfield;
-}
-
-input[type=number] {
-    margin-left: 5px;
-    field-sizing: content;
-    border: 0px;
-    
-    /* .btn styling */
-    background-color: hsl(from var(--bg-dark) h s 25%);
-    color: var(--text-dark);
-    user-select: none;
-    cursor: pointer;
-
-    /* font */
-    font-size: 1em;
-    font-weight: 500;
-    font-family: "Oswald";
-
-    /* center number */
-    text-align: center;
-}
-
-.flex_break {
-    flex-basis: 100%;
-}
 
 @media screen and (max-width: 700px) {
     body {

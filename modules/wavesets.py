@@ -94,7 +94,7 @@ class NPC:
 
             
             desc_key = f"{self.name} Desc"
-            self.description = get_key(desc_key, silent=True).replace("\\n","  \n") # (Lots of NPCs with intentionally missing descriptions)
+            self.description = get_key(desc_key, silent=True).replace("\\n", "<div class=\"flex_break\"></div>\n") # (Lots of NPCs with intentionally missing descriptions)
             
             """
             npc_obj = {
@@ -138,7 +138,8 @@ class NPC:
                 return npc_vars_dict[num]
             else:
                 util.debug(f"[ ] {self.path} var {num}", "npc")
-                return "dynamic"
+                return "?"
+                #return "dynamic"
     
     def _set_npc_data_shared(self):
         # Several instances of NPC entry data, several instances of CClotBody in separate files
@@ -157,9 +158,9 @@ class NPC:
             p_data = util.read(base_path+p+".sp")
             try:
                 h = self.file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
-                if "MinibossHealthScaling" in h:
-                    h = f"Miniboss health scaling (Base {h.split("(")[1][:-1]}HP)"
-                elif ":" in h:
+                #if "MinibossHealthScaling" in h:
+                #    h = f"Miniboss health scaling (Base {h.split("(")[1][:-1]}HP)"
+                if ":" in h:
                     """
                     extra "data" fields for enemies (lists, numbers or types like "Elite")
                     'data[0]?x' is probably checking if any value from the waveset cfg exists at all to use x? 
@@ -203,9 +204,9 @@ class NPC:
     
         try:
             self.health = self.file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
-            if "MinibossHealthScaling" in self.health:
-                self.health = f"Miniboss health scaling (Base {self.health.split("(")[1][:-1]}HP)"
-            elif ":" in self.health:
+            #if "MinibossHealthScaling" in self.health:
+            #    self.health = f"Miniboss health scaling (Base {self.health.split("(")[1][:-1]}HP)"
+            if ":" in self.health:
                 """
                 extra "data" fields for enemies (lists, numbers or types like "Elite")
                 'data[0]?x' is probably checking if any value from the waveset cfg exists at all to use x? 
@@ -254,9 +255,9 @@ class NPC:
         
         try:
             self.health = self.file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
-            if "MinibossHealthScaling" in self.health:
-                self.health = f"Miniboss health scaling (Base {self.health.split("(")[1][:-1]}HP)"
-            elif ":" in self.health:
+            #if "MinibossHealthScaling" in self.health:
+            #    self.health = f"Miniboss health scaling (Base {self.health.split("(")[1][:-1]}HP)"
+            if ":" in self.health:
                 """
                 extra "data" fields for enemies (lists, numbers or types like "Elite")
                 'data[0]?x' is probably checking if any value from the waveset cfg exists at all to use x? 
@@ -367,28 +368,7 @@ def parse():
             w = w.format(*(" "*i + delay_str for i in range(delay_count)))
         return w
     
-    def add_npc(plugin, data): # Deprecated
-        if plugin not in added_npc_ids:
-            added_npc_ids.append(plugin)
-            npc_data = NPCS_BY_FILENAME[plugin]
-            if type(npc_data.health) == dict:
-                npc_health = ""
-                for k,v in npc_data.health.items():
-                    npc_health += f"{k.capitalize()}: {v}HP"
-            else:
-                npc_health = f"Default health: {npc_data.health}  \n" if npc_data.health != "" else ""
-            npc_cat = f"Category: {npc_data.category}  \n" if npc_data.category != "" else ""
-            if "0" not in npc_data.flags and "-1" not in npc_data.flags:
-                npc_flags = "Flags: "
-                dflags = ", ".join([FLAG_MAPPINGS[item] for item in npc_data.flags])
-                npc_flags += dflags + "  \n"
-            else:
-                npc_flags = ""
-            return f"# {data["image"].replace("16","32") if data["image"]!="" else ""} {data["name"]}  \n_{plugin}_  \n{npc_health}{npc_flags}{npc_data.description}  \n"
-        return ""
-
     def get_npc(plugin, data):
-        added_npc_ids.append(plugin)
         npc_data = NPCS_BY_FILENAME[plugin]
         if type(npc_data.health) == dict:
             npc_health = ""
@@ -498,7 +478,7 @@ def parse():
             """
             extra_info = ""
             if "health" in wave_entry_data:
-                extra_info += f" {wave_entry_data["health"]}HP"
+                extra_info += f" {format(int(wave_entry_data["health"]), ",").replace(",", ".")}HP"
             elif npc_data:
                 if type(npc_data.health) == dict:
                     if "data" in wave_entry_data:
@@ -528,6 +508,7 @@ def parse():
             # Show NPC Flags
             # TODO some icons missing even tho they exist
             display_name = npc_name
+            desc = ""
             if npc_data:
                 for flag in npc_data.flags:
                     if flag != "0" and flag != "-1":
@@ -556,7 +537,7 @@ def parse():
                 if npc_data.category != "Type_Hidden": # No longer needed. TODO remove npc info on hover if hidden
                     #display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
                     # Add NPC if not hidden & doesn't exist already
-                    extra_info += "<br>\n"+get_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image})["description"] # TODO use flags for different icon looks
+                    desc = "<div class=\"flex_break\"></div>\n"+get_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image})["description"] # TODO use flags for different icon looks
                     #md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image}) 
             else:
                 image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","E")
@@ -587,7 +568,7 @@ def parse():
                         "img": image if image else "",
                         "prefix": npc_name_prefix,
                         "display_name": display_name,
-                        "extra_info": extra_info
+                        "extra_info": extra_info + desc
                     }
                 )
         
@@ -647,7 +628,8 @@ def parse():
             if len(wavesets)>1:
                 wavesetlist_html += "<ul>\n"
                 for waveset_name in wavesets:
-                    wavesetlist_html += f"<li><a href=\"\">{waveset_name}</li>\n"
+                    link = f"{filename.split("/")[-1]}_{util.to_section_link(waveset_name)}.json"
+                    wavesetlist_html += f"<li><a href=\"waveset_viewer.html?w={link}\">{waveset_name}</li>\n"
                 wavesetlist_html += "</ul>\n"
 
             # Modifier outline
@@ -684,7 +666,7 @@ def parse():
             # mapset, i.e. only one waveset
             # also add link to its config file in md_mapsets (mapset outline in home.md and sidebar.md)
             # might be unused at the moment
-            MARKDOWN_WAVESETS, md_npc = parse_waveset(filename, WAVESET_LIST, MARKDOWN_WAVESETS, md_npc)
+            wavesetlist_html, md_npc = parse_waveset(filename, WAVESET_LIST, MARKDOWN_WAVESETS, md_npc)
         
         if map_mode: 
             n = filename.split("/")[-1].replace(".cfg","")
@@ -704,22 +686,22 @@ def parse():
 
         context = { # startcash, wavesetlist
             "startcash": WAVESET_LIST["cash"],
-            "wavesetlist": wavesetlist_html
+            "wavesetlistdata": wavesetlist_html
         }
         HTML_WAVESET_LIST = util.fill_template(util.read("templates/waveset/waveset_list.html"),context)
         return HTML_WAVESET_LIST, md_mapsets
 
-    def parse_waveset_list_cfg(filename, md_npc, md_mapsets, filename_md=None):
+    def parse_waveset_list_cfg(filename, md_mapsets, filename_md=None):
         if (filename not in util.WAVESETS_FILESCOPE) and len(util.WAVESETS_FILESCOPE)>0:
             util.log(f"{filename} not in FILESCOPE", "OKBLUE")
-            return md_npc, md_mapsets
+            return md_mapsets
         WAVESETLIST_RAW = util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{filename}")
         WAVESETLIST_DATA = KeyValues1.parse(WAVESETLIST_RAW)
         WAVESETLIST_TYPE = list(WAVESETLIST_DATA.keys())[0]
 
         if WAVESETLIST_TYPE not in util.WAVESETS_TYPESCOPE: # Unsupported waveset cfg (Rogue, Bunker, etc.)
             util.log(f"Unsupported waveset cfg {filename}!","WARNING")
-            return md_npc, md_mapsets
+            return md_mapsets
         
         util.log(f"Parsing waveset list cfg: {filename} | Is map? {"maps" in filename}")
 
@@ -741,9 +723,9 @@ def parse():
         if WAVESETLIST_TYPE in ["Setup", "Custom"]:
             MARKDOWN_WAVESETS, md_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, md_mapsets)
         elif WAVESETLIST_TYPE == "Betting":
-            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_RAW, md_npc, md_mapsets)
+            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_RAW, md_mapsets)
         elif WAVESETLIST_TYPE == "Rogue":
-            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_rogue(filename, WAVESETLIST_DATA, md_npc, md_mapsets)
+            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_rogue(filename, WAVESETLIST_DATA, md_mapsets)
         else:
             MARKDOWN_WAVESETS = f"err key {WAVESETLIST_TYPE}"
             util.log("UNSUPPORTED CFG IN OUTPUT!", "FAIL")
@@ -754,7 +736,7 @@ def parse():
             else:
                 filename_md = f"gh-pages/wavesets_{filename}.md".replace("/","_")
         
-        util.write(filename_md, MARKDOWN_WAVESETS)
+        util.write(filename_md, util.fill_template(MARKDOWN_WAVESETS,{"wavesetlistname":filename_md.split("/")[-1].replace(".html","").title()}))
         return md_mapsets
     
     #### ZR: Special Maps ####
@@ -836,12 +818,7 @@ def parse():
         modal = f"$$ \\textbf{{ {get_key(name).replace("&","\\&")} }} $$\n{shop_cost}{dropchance}$$\n{util.as_latex(get_key(f"{name} Desc"))}\n$$"
         return modal + "  \n"
 
-    # NPC list is global to prevent duplicates
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
-    # TODO what the hell. make this global
-    MARKDOWN_NPCS = ""
-    MARKDOWN_MAPSETS = "\n**Map-specific wavesets**  \n"
-    added_npc_ids = []
 
     if not os.path.isdir("repo_img"): subprocess.run(["mkdir", "repo_img"])
 
@@ -851,22 +828,26 @@ def parse():
     cfg_files = {
         "classic.cfg": "gh-pages/survival.html",
         "fastmode.cfg": "gh-pages/raidrush.html",
-    #    "fastmode_redsun.cfg": "ZR: Raidrush (redsun.tf).md", #raiden only so eh
     }
     for file in os.listdir("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/maps/"):
         if ".cfg" in file:
             cfg_files[f"maps/{file}"] = None
 
-    for f in cfg_files.keys():
-        MARKDOWN_MAPSETS = parse_waveset_list_cfg(f, MARKDOWN_NPCS, MARKDOWN_MAPSETS, filename_md=cfg_files[f])
+    for f,n in cfg_files.items():
+        HTML_SPECIALMAPS = parse_waveset_list_cfg(f, "", filename_md=n)
 
     # Get current commit SHA for TF2-Zombie-Riot
     COMMIT_SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
     COMMIT_SHA_SHORT = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
 
-    PARSE_RUN_INFO = f"\n<sub>Code parsed at {util.datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')} H:M:S D.M.Y {time.tzname[time.daylight]}</sub>  \n<sub>Source repository commit [artvin01/TF2-Zombie-Riot@`{COMMIT_SHA_SHORT}`](https://github.com/artvin01/TF2-Zombie-Riot/commit/{COMMIT_SHA})</sub>"
+    if False:
+        context = {
+            "wavesetlistdata": HTML_SPECIALMAPS # list of mapset_overview templates
+        }    
+        util.write("gh-pages/special.html", util.fill_template(util.read("templates/waveset/mapset_list.html"), context))
 
-    #util.write("npcs.md", MARKDOWN_NPCS)
-    #util.write("sidebar.md", util.read("wiki/sidebar.md")+MARKDOWN_MAPSETS)
-    #util.write("home.md", util.read("wiki/home.md")+MARKDOWN_MAPSETS+PARSE_RUN_INFO)
+    context = {
+        "parse_run": f"\n<sub>Code parsed at {util.datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')} H:M:S D.M.Y {time.tzname[time.daylight]}</sub><br><sub>Source repository commit <a href=\"https://github.com/artvin01/TF2-Zombie-Riot/commit/{COMMIT_SHA}\">artvin01/TF2-Zombie-Riot@{COMMIT_SHA_SHORT}</a></sub>",
+    }
+    util.write("gh-pages/index.html", util.fill_template(util.read("templates/index.html"),context))
     return generated_files
