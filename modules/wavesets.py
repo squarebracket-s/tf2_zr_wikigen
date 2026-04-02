@@ -622,14 +622,14 @@ def parse():
             output["waves"][wave_idx] = parse_wave(wave_data)
             wlink = f"{abslink}_{wave_idx}"
             embed.generate_waveset_embed(wlink, name, int(wave), max_waves, output["waves"][wave_idx])
-            context = {
-                "WAVESETNAME": name,
-                "WAVESETDESC": desc,
-                "WAVESETFILENAME": abslink,
-                "WAVENUM": str(wave_idx),
-                "WLINK": wlink
-            }
-            util.write(f"gh-pages/embed/{wlink}.html", util.fill_template(util.read("templates/waveset/embed.html"),context))
+            #context = {
+            #    "WAVESETNAME": name,
+            #    "WAVESETDESC": desc,
+            #    "WAVESETFILENAME": abslink,
+            #    "WAVENUM": str(wave_idx),
+            #    "WLINK": wlink
+            #}
+            #util.write(f"gh-pages/embed/{wlink}.html", util.fill_template(util.read("templates/waveset/embed.html"),context))
         
         waveset_cache[file] = output
         return output

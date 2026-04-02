@@ -96,7 +96,7 @@ function fill_template(temp, cont) {
 }
 
 function copy_waveset_embed_link() {
-    copyTextToClipboard("https://squarebracket-s.github.io/tf2_zr_wikigen/embed/"+waveset_file.split(".json")[0].split("/")[1]+"_"+wave+".html");
+    copyTextToClipboard("https://squarebracket-s.github.io/tf2_zr_wikigen/embed/"+waveset_file.split(".json")[0].split("/")[1]+"_"+wave+".jpg");
 }
 
 // https://stackoverflow.com/a/30810322

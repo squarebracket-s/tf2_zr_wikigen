@@ -70,7 +70,7 @@ def generate_waveset_embed(filename, title, wave, wave_max, npc_list):
             dx += ICON_SIZE+ICON_PADDING
         dy += ICON_SIZE+ICON_PADDING+ICON_SIZE/2
     
-    img.save(f"gh-pages/waveset_embeds/{filename}.jpg")
+    img.save(f"gh-pages/embed/{filename}.jpg")
 
 
 def draw_text_centered(drawable, pos, text, fill, font):
