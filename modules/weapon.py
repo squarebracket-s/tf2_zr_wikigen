@@ -207,17 +207,18 @@ def parse():
                     pass
                     #markdown_header += f"{" "*(depth+1)}{item}  \n" # Trophy:
                 elif is_weapon(item_data):
-                    item_html, wtags, item_paps, tags = parse_weapon_data(item,item_data,depth,tags)
-                    # item
-                    context = {
-                        "name": item,
-                        "data_item": item_html,
-                        "wtags": wtags
-                    }
-                    html += util.fill_template(util.read("templates/items/item_preview.html"), context)
+                    if "hidden" not in item_data: # TODO add toggle to show
+                        item_html, wtags, item_paps, tags = parse_weapon_data(item,item_data,depth,tags)
+                        # item
+                        context = {
+                            "name": item,
+                            "data_item": item_html,
+                            "wtags": wtags
+                        }
+                        html += util.fill_template(util.read("templates/items/item_preview.html"), context)
 
-                    # paps
-                    html += util.fill_template(item_paps, {"wtags":wtags})
+                        # paps
+                        html += util.fill_template(item_paps, {"wtags":wtags})
                 elif "weaponkit" in item_data:
                     item_html, wtags, item_paps, tags = parse_weapon_data(item,item_data,depth,tags)
                     # kit (has no paps)
