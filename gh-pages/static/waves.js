@@ -73,7 +73,6 @@ function update_wave_display() {
     }
 
     document.title = "ZR Encyclopedia - " + waveset_data["name"];
-    document.querySelector('meta[property="og:title"]').setAttribute("content", "ZR Encyclopedia - " + waveset_data["name"]);
     waveset_name_inner.innerHTML = waveset_data["name"];
 
     const container = document.getElementById("npc_container");
