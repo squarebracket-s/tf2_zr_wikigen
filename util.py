@@ -1,5 +1,6 @@
 import hashlib, os, datetime
 from collections import defaultdict
+from re import sub
 
 # https://stackoverflow.com/questions/3768895/how-to-make-a-class-json-serializable
 # Allow classes to define __json__ to be JSON serializable
@@ -61,16 +62,7 @@ def format_num(n):
         return f"<span style=\"color:red;\">{n}</span>"
 
 def to_section_link(str_):
-    remove = [
-        "&",
-        "[",
-        "]",
-        "'",
-        ","
-    ]
-    for r in remove:
-        str_ = str_.replace(r,"")
-    return f"{str_.lower().replace(" ","")}"
+    return sub(r'[^a-z0-9]', '', str_.lower())
 
 def remove_multiline_comments(d): # Fixes the script interpreting the comment in npc_headcrabzombie.sp as actual data
     new_str = ""
