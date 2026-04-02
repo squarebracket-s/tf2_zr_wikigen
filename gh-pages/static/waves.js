@@ -37,7 +37,7 @@ async function parse_waveset(file) {
         }
 
         waveset_data = await response.json();
-        max_waves = Object.keys(waveset_data["waves"]).reduce((a, b) => Number(a) > Number(b) ? a : b);
+        max_waves = Number(Object.keys(waveset_data["waves"]).reduce((a, b) => Number(a) > Number(b) ? a : b));
         console.log("Max waves:"+max_waves);
         console.log("Fetched "+waveset_file);
         update_wave_display();
