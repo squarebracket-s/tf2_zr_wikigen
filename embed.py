@@ -7,7 +7,7 @@ from re import sub
 
 color = {
     "bg_dark": (24, 26, 27),
-    "bg_light": (180,184,171),
+    "bg_light": (230,234,221),
     "text_dark": (204,200,193),
     "link_dark": (149,187,212),
     "deep-space-blue": (21,50,67)
@@ -23,7 +23,6 @@ img_cache = {}
 WIDTH = 512
 HEIGHT = 512
 
-# 198.8x198.8 for exactly ten icons/row with 30px padding
 ICON_SIZE = 50
 ICON_PADDING = 6
 ICON_INNER_PADDING = 5
@@ -31,7 +30,10 @@ ICON_INNER_PADDING = 5
 
 
 def generate_waveset_embed(filename, title, wave, wave_max, npc_list):
-    global ICON_SIZE, ICON_PADDING
+    global ICON_SIZE, ICON_PADDING, ICON_INNER_PADDING
+    ICON_SIZE = 50
+    ICON_INNER_PADDING = 5
+    
     img = Image.new(mode="RGB", size=(WIDTH, HEIGHT))
     drawable = ImageDraw.Draw(img)
 
@@ -42,10 +44,10 @@ def generate_waveset_embed(filename, title, wave, wave_max, npc_list):
     bar_y = 125
     bar_height = 15
     bar_padding = 25
-    drawable.rounded_rectangle([(bar_padding,bar_y), (WIDTH-bar_padding,bar_y+bar_height)], 2, color["bg_light"], outline=color["deep-space-blue"])
-    bar_width = WIDTH-(bar_padding*2)
+    drawable.rounded_rectangle([(bar_padding,bar_y), (WIDTH-bar_padding,bar_y+bar_height)], 4, color["bg_light"], outline=color["deep-space-blue"])
+    bar_width = WIDTH-((bar_padding+2)*2)
     progress = (wave/wave_max)*bar_width
-    drawable.rounded_rectangle([(bar_padding+2,bar_y+2), (bar_padding+2+progress,(bar_y+bar_height)-2)], 2, color["link_dark"], corners=(True,True,True,True) if wave == wave_max else (True, False, False, True))
+    drawable.rounded_rectangle([(bar_padding+2,bar_y+2), (bar_padding+2+progress,(bar_y+bar_height)-2)], 4, color["link_dark"], corners=(True,True,True,True) if wave == wave_max else (True, False, False, True))
 
     npc_list_chunks = chunks(npc_list, math.floor((WIDTH-60)/(ICON_SIZE+ICON_PADDING)))
 
@@ -54,13 +56,13 @@ def generate_waveset_embed(filename, title, wave, wave_max, npc_list):
 
     npc_list_chunks, chunklen = tee(npc_list_chunks) # copy generator as not to break following code
     nlen = len(list(chunklen)) 
-    if nlen>4: # TODO rewrite such that full row length gets used instead of resizing the whole thing
-        enemy_height = ICON_SIZE+ICON_PADDING+ICON_SIZE/2
+    enemy_height = ICON_SIZE+ICON_PADDING+ICON_SIZE/2
+    actual_height = (WIDTH-bar_padding) - dy
+    if nlen > math.floor(actual_height/enemy_height):
         full_height = enemy_height * nlen
-        actual_height = (WIDTH-bar_padding) - dy
         mult = actual_height/full_height
         ICON_SIZE = math.floor(ICON_SIZE*mult)
-        ICON_PADDING = math.floor(ICON_PADDING*mult)
+        ICON_INNER_PADDING = math.floor(ICON_INNER_PADDING*mult)
 
     for row in npc_list_chunks:
         row_w = (ICON_SIZE+ICON_PADDING)*len(row)
@@ -92,7 +94,7 @@ def draw_npc(drawable, img, pos, npc):
         img.paste(icon, (math.floor(left+ICON_INNER_PADDING),math.floor(top+ICON_INNER_PADDING)), icon)
 
     if npc["count"].startswith("<b>"):
-        font["Noto Sans"].set_variation_by_name('Bold')
+        font["Noto Sans"].set_variation_by_name('Black')
         npc["count"] = npc["count"][3:-4]
     draw_text_centered(drawable, (pos[0], pos[1]+ICON_SIZE/2), npc["count"], color["text_dark"], font["Noto Sans"])
     font["Noto Sans"].set_variation_by_name('Regular')
