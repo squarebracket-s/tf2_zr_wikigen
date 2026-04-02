@@ -13,6 +13,7 @@ JSONEncoder.default = wrapped_default
 
 # Use ' ' for spacing in markdown
 
+# wavesets, npc, ...
 CATEGORIES = []
 if "DEBUG" in os.environ:
     CATEGORIES = [x.lower() for x in os.environ["DEBUG"].split(",")]
@@ -32,7 +33,7 @@ WAVESETS_TYPESCOPE = []
 if "TYPESCOPE" in os.environ:
     WAVESETS_TYPESCOPE = [x.title() for x in os.environ["TYPESCOPE"].split(",")]
 else:
-    WAVESETS_TYPESCOPE = ["Setup"] #"Custom", "Betting", "Rogue"]
+    WAVESETS_TYPESCOPE = ["Setup", "Custom"]#, "Betting", "Rogue"]
 
 print("CATEGORIES",CATEGORIES)
 print("SCOPE",SCOPE)
@@ -53,7 +54,11 @@ def normalize_whitespace(str_):
 
 
 def format_num(n):
-    return format(int(n), ",").replace(",", ".")
+    try:
+        return format(int(n), ",").replace(",", ".")
+    except ValueError: # 2ß00hp moment
+        log(f"[format_num] Invalid input '{n}'!", "FAIL")
+        return f"<span style=\"color:red;\">{n}</span>"
 
 def to_section_link(str_):
     remove = [

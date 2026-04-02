@@ -614,7 +614,7 @@ def parse():
         waveset_cache[name] = output
         return output
     
-    def parse_waveset_list_cfg_common(cfg, filename, md_mapsets):
+    def parse_waveset_list_cfg_common(cfg, filename, html_mapsets):
         map_mode = "maps" in filename # Is map specific config?
         WAVESET_LIST = cfg[list(cfg.keys())[0]] # data of cfg file
         if "Setup" in WAVESET_LIST: WAVESET_LIST = WAVESET_LIST["Setup"] # map-specific configs start with custom instead of setup, requiring an extra step to get to waveset/wave< data
@@ -632,6 +632,18 @@ def parse():
                     link = f"{filename.split("/")[-1]}_{util.to_section_link(waveset_name)}.json"
                     wavesetlist_html += f"<li><a href=\"waveset_viewer.html?w={link}\">{waveset_name}</li>\n"
                 wavesetlist_html += "</ul>\n"
+                if map_mode: 
+                    n = filename.split("/")[-1].replace(".cfg","")
+                    html_mapsets += f"<li><a href=\"{n}.html\">{n}</a></li>"
+            else:
+                if map_mode: 
+                    waveset_name = list(wavesets.keys())[0]
+                    n = filename.split("/")[-1].replace(".cfg","")
+                    link = f"{filename.split("/")[-1]}_{util.to_section_link(waveset_name)}.json"
+                    html_mapsets += f"<li><a href=\"waveset_viewer.html?w={link}\">{n} - {waveset_name}</li>\n"
+                else:
+                    util.log(f"{filename} - Only one waveset but not in maps/ dir","FAIL")
+                    raise Exception
 
             # Modifier outline
             # TODO
@@ -663,15 +675,9 @@ def parse():
                 mn = parse_waveset(waveset_file, WAVESET_DATA)
                 mn["name"] = waveset_name
                 wavesets_json[waveset_name] = mn
-        else: # Waveset itself / map_mode | Assume data being in the cfg file itself. See: maps/zr_bossrush.cfg
-            # mapset, i.e. only one waveset
-            # also add link to its config file in md_mapsets (mapset outline in home.md and sidebar.md)
-            # might be unused at the moment
-            wavesetlist_html, md_npc = parse_waveset(filename, WAVESET_LIST, MARKDOWN_WAVESETS, md_npc)
-        
-        if map_mode: 
-            n = filename.split("/")[-1].replace(".cfg","")
-            #md_mapsets += f"- [{n}]({n})  \n"
+        else: # Waveset itself / map_mode | Assume data being in the cfg file itself. Might only be the case for rogue/const/bettingwars
+            util.log(f"{filename} - No 'Waves' key found!","FAIL")
+            raise Exception
         
         # Modifiers title and desc
         #if "Modifiers" in WAVESET_LIST:
@@ -680,29 +686,28 @@ def parse():
         #        desc = get_key(data["desc"]).replace("\\n","  \n")
         #        MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
         
-        print("len ",len(list(wavesets_json.keys())))
         if not os.path.isdir("gh-pages/wavesets"): subprocess.run(["mkdir", "gh-pages/wavesets"])
         for f_waveset, f_data in wavesets_json.items():
             util.write(f"gh-pages/wavesets/{filename.split("/")[-1]}_{util.to_section_link(f_waveset)}.json", json.dumps(f_data,indent=2))
 
-        context = { # startcash, wavesetlist
+        context = { # startcash, wavesetlistdata
             "startcash": WAVESET_LIST["cash"],
             "wavesetlistdata": wavesetlist_html
         }
-        HTML_WAVESET_LIST = util.fill_template(util.read("templates/waveset/waveset_list.html"),context)
-        return HTML_WAVESET_LIST, md_mapsets
+        HTML_WAVESET_LIST = util.fill_template(util.read(f"templates/waveset/{"mapset_overview" if map_mode else "waveset_list"}.html"),context)
+        return HTML_WAVESET_LIST, html_mapsets
 
-    def parse_waveset_list_cfg(filename, md_mapsets, filename_md=None):
+    def parse_waveset_list_cfg(filename, html_mapsets, filename_md=None):
         if (filename not in util.WAVESETS_FILESCOPE) and len(util.WAVESETS_FILESCOPE)>0:
             util.log(f"{filename} not in FILESCOPE", "OKBLUE")
-            return md_mapsets
+            return html_mapsets
         WAVESETLIST_RAW = util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{filename}")
         WAVESETLIST_DATA = KeyValues1.parse(WAVESETLIST_RAW)
         WAVESETLIST_TYPE = list(WAVESETLIST_DATA.keys())[0]
 
         if WAVESETLIST_TYPE not in util.WAVESETS_TYPESCOPE: # Unsupported waveset cfg (Rogue, Bunker, etc.)
             util.log(f"Unsupported waveset cfg {filename}!","WARNING")
-            return md_mapsets
+            return html_mapsets
         
         util.log(f"Parsing waveset list cfg: {filename} | Is map? {"maps" in filename}")
 
@@ -722,7 +727,7 @@ def parse():
         """
 
         if WAVESETLIST_TYPE in ["Setup", "Custom"]:
-            MARKDOWN_WAVESETS, md_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, md_mapsets)
+            MARKDOWN_WAVESETS, html_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, html_mapsets)
         elif WAVESETLIST_TYPE == "Betting":
             MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_RAW, md_mapsets)
         elif WAVESETLIST_TYPE == "Rogue":
@@ -735,10 +740,11 @@ def parse():
             if "maps" in filename:
                 filename_md = f"gh-pages/{filename.split("/")[-1].replace(".cfg","")}.html"
             else:
-                filename_md = f"gh-pages/wavesets_{filename}.md".replace("/","_")
-        
-        util.write(filename_md, util.fill_template(MARKDOWN_WAVESETS,{"wavesetlistname":filename_md.split("/")[-1].replace(".html","").title()}))
-        return md_mapsets
+                filename_md = f"gh-pages/wavesets_{filename}.html".replace("/","_")
+        name = filename_md.split("/")[-1].replace(".html","")
+        if "maps" not in filename: name=name.title()
+        util.write(filename_md, util.fill_template(MARKDOWN_WAVESETS,{"wavesetlistname":name}))
+        return html_mapsets
     
     #### ZR: Special Maps ####
     def parse_betting(name, data_raw, md_npc, md_mapsets): # zr_bettingwars
@@ -834,18 +840,18 @@ def parse():
         if ".cfg" in file:
             cfg_files[f"maps/{file}"] = None
 
+    HTML_SPECIALMAPS = ""
     for f,n in cfg_files.items():
-        HTML_SPECIALMAPS = parse_waveset_list_cfg(f, "", filename_md=n)
+        HTML_SPECIALMAPS = parse_waveset_list_cfg(f, HTML_SPECIALMAPS, filename_md=n)
 
     # Get current commit SHA for TF2-Zombie-Riot
     COMMIT_SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
     COMMIT_SHA_SHORT = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
 
-    if False:
-        context = {
-            "wavesetlistdata": HTML_SPECIALMAPS # list of mapset_overview templates
-        }    
-        util.write("gh-pages/special.html", util.fill_template(util.read("templates/waveset/mapset_list.html"), context))
+    context = {
+        "wavesetlistdata": HTML_SPECIALMAPS # list of mapset_overview templates
+    }    
+    util.write("gh-pages/special.html", util.fill_template(util.read("templates/waveset/mapset_list.html"), context))
 
     context = {
         "parse_run": f"\n<sub>Code parsed at {util.datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')} H:M:S D.M.Y {time.tzname[time.daylight]}</sub><br><sub>Source repository commit <a href=\"https://github.com/artvin01/TF2-Zombie-Riot/commit/{COMMIT_SHA}\">artvin01/TF2-Zombie-Riot@{COMMIT_SHA_SHORT}</a></sub>",
