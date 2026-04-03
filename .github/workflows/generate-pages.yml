@@ -5,14 +5,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  pages: write
+  id-token: write 
 
 jobs:
   generate_wiki:
     name: generate-pages
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
     - uses: actions/setup-python@v6
       with:
         python-version: '3.14'
@@ -30,14 +30,20 @@ jobs:
         mv repo_img/ ./gh-pages/repo_img/
         mv builtin_img/ ./gh-pages/builtin_img/
         mv premedia_icons/ ./gh-pages/premedia_icons/
+    
+    - name: Upload static files as artifact
+      id: deployment
+      uses: actions/upload-pages-artifact@v4 # or specific "vX.X.X" version tag for this action
+      with:
+        path: gh-pages/
 
-    - name: Push to gh-pages
-      run: |
-        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git config --global user.name "github-actions[bot]"
-        cd gh-pages
-        git init -b gh-pages # -b redundant?
-        git add .
-        git commit -m "Generate from update [ https://github.com/squarebracket-s/tf2_zr_wikigen/commit/$GITHUB_SHA ]"
-        git remote add origin https://x-access-token:${{ secrets.WIKI_PAT }}@github.com/squarebracket-s/tf2_zr_wikigen.git
-        git push origin gh-pages --force
+  deploy:
+    name: generate-pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5 # or specific "vX.X.X" version tag for this action
