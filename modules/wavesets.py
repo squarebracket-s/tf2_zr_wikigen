@@ -620,16 +620,7 @@ def parse():
             abovelimit = False if "fakemaxwaves" not in wd else wave_idx > int(wd["fakemaxwaves"]) # If wave number is above specified max fake limit
 
             output["waves"][wave_idx] = parse_wave(wave_data)
-            wlink = f"{abslink}_{wave_idx}"
-            embed.generate_waveset_embed(wlink, name, int(wave), max_waves, output["waves"][wave_idx])
-            #context = {
-            #    "WAVESETNAME": name,
-            #    "WAVESETDESC": desc,
-            #    "WAVESETFILENAME": abslink,
-            #    "WAVENUM": str(wave_idx),
-            #    "WLINK": wlink
-            #}
-            #util.write(f"gh-pages/embed/{wlink}.html", util.fill_template(util.read("templates/waveset/embed.html"),context))
+            embed.generate_waveset_embed(f"{abslink}_{wave_idx}", name, int(wave), max_waves, output["waves"][wave_idx])
         
         waveset_cache[file] = output
         return output
@@ -732,7 +723,7 @@ def parse():
         util.log(f"Parsing waveset list cfg: {filename} | Is map? {"maps" in filename}")
 
         """
-        maps/zr_bunker_old_fish.cfg - currently disabled in zr and has missing files
+        maps/zr_bunker_old_fish.cfg - currently disabled in zr? and has missing files
         maps/zr_beastrooms.cfg - empty
         maps/zr_holdout.cfg - const ?
 
@@ -747,13 +738,13 @@ def parse():
         """
 
         if WAVESETLIST_TYPE in ["Setup", "Custom"]:
-            MARKDOWN_WAVESETS, html_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, html_mapsets)
+            HTML_WAVESETS, html_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, html_mapsets)
         elif WAVESETLIST_TYPE == "Betting":
-            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_RAW, md_mapsets)
+            HTML_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_RAW, md_mapsets)
         elif WAVESETLIST_TYPE == "Rogue":
-            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_rogue(filename, WAVESETLIST_DATA, md_mapsets)
+            HTML_WAVESETS, md_npc, md_mapsets = parse_rogue(filename, WAVESETLIST_DATA, md_mapsets)
         else:
-            MARKDOWN_WAVESETS = f"err key {WAVESETLIST_TYPE}"
+            HTML_WAVESETS = f"err key {WAVESETLIST_TYPE}"
             util.log("UNSUPPORTED CFG IN OUTPUT!", "FAIL")
 
         if not filename_md:
@@ -763,7 +754,7 @@ def parse():
                 filename_md = f"gh-pages/wavesets_{filename}.html".replace("/","_")
         name = filename_md.split("/")[-1].replace(".html","")
         if "maps" not in filename: name=name.title()
-        util.write(filename_md, util.fill_template(MARKDOWN_WAVESETS,{"wavesetlistname":name}))
+        util.write(filename_md, util.fill_template(HTML_WAVESETS,{"wavesetlistname":name}))
         return html_mapsets
     
     #### ZR: Special Maps ####

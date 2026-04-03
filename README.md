@@ -5,17 +5,16 @@ The code is currently being rewritten to move the encyclopedia to github pages, 
 # [GH Pages version (WIP)](https://squarebracket-s.github.io/tf2_zr_wikigen/)
 
 # TODO
-- [ ] Waveset data
-  - [ ] Special wavesets
-    - [ ] ZR: Survival
-    - [ ] ZR: Raidrush
+- [x] Waveset data
+  - [] Better NPC data parsing
+  - [] Special wavesets
+    - [x] ZR: Survival
+    - [x] ZR: Raidrush
     - [ ] ZR: Rogue
     - [ ] ZR: Construction
         - [ ] Construction 1
         - [ ] Construction 2
-    - [ ] ZR: Special Maps
-- [ ] NPC data
-  - [ ] Show all properties in wavesets
+    - [x] ZR: Special Maps
 - [x] Item data
   - [x] Items
   - [x] Weapon Paps

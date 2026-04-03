@@ -4,12 +4,15 @@ on:
     - page_gen
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   generate_wiki:
     name: generate-pages
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - uses: actions/setup-python@v6
       with:
         python-version: '3.13'
@@ -35,6 +38,6 @@ jobs:
         cd gh-pages
         git init -b gh-pages # -b redundant?
         git add .
-        git commit -m "Generate Pages [ https://github.com/squarebracket-s/tf2_zr_wikigen/commit/$GITHUB_SHA ]"
-        git remote add origin https://x-access-token:${{ secrets.WIKI_PAT }}@github.com/squarebracket-s/tf2_zr_wikigen.git
+        git commit -m "Generate from update [ https://github.com/squarebracket-s/tf2_zr_wikigen/commit/$GITHUB_SHA ]"
+        git remote add origin github.com/squarebracket-s/tf2_zr_wikigen.git
         git push origin gh-pages --force
