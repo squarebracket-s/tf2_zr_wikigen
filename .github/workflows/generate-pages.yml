@@ -4,12 +4,9 @@ on:
     - page_gen
   workflow_dispatch:
 
-permissions:
-  pages: write
-  id-token: write 
 
 jobs:
-  generate_wiki:
+  build:
     name: generate-pages
     runs-on: ubuntu-latest
     steps:
@@ -33,17 +30,20 @@ jobs:
     
     - name: Upload static files as artifact
       id: deployment
-      uses: actions/upload-pages-artifact@v4 # or specific "vX.X.X" version tag for this action
+      uses: actions/upload-pages-artifact@v4
       with:
         path: gh-pages/
 
   deploy:
-    name: generate-pages
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write 
     needs: build
-    - name: Deploy to GitHub Pages
+    steps:
+      - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5 # or specific "vX.X.X" version tag for this action
+        uses: actions/deploy-pages@v5
