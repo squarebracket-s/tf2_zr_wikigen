@@ -22,6 +22,12 @@
     local("Oswald"),
     url("Oswald-VariableFont_wght.ttf") format("truetype")
 }
+@font-face {
+  font-family: "Noto Sans";
+  src:
+    local("Noto Sans"),
+    url("NotoSans-VariableFont_wdth,wght.ttf") format("truetype")
+}
 
 body {
     padding: 75px;
@@ -39,20 +45,6 @@ a {
 a:hover, a:focus {
     color: hsl(from var(--link-dark) h s 80%);
 }
-
-/* Items */
-
-summary {
-    margin-bottom: .5em;
-    margin-top: .5em;
-    font-weight: 500;
-    font-family: "Oswald";
-}
-
-details summary { font-size: 2em }
-details details summary { font-size: 1.5em }
-details details details summary { font-size: 1em }
-details details details details summary { font-size: .5em }
 
 h1, .h1 {
     font-size: 2em;
@@ -91,6 +83,10 @@ h3, .h3 {
     opacity: 0.6;
 }
 
+.hidden {
+    display:none;
+}
+
 /* swap out dots in lists */
 ul {
   list-style: none;
@@ -113,10 +109,7 @@ li:before {
   padding-right: 5px;
 }
 
-.hidden {
-    display:none;
-}
-
+/* basic buttons */
 .btn {
     background-color: var(--bg-light);
     color: var(--deep-space-blue);
@@ -138,9 +131,5 @@ li:before {
 @media screen and (max-width: 700px) {
     body {
         padding: 25px;
-    }
-
-    .tooltip {
-        width: min-content; /* TODO properly size this */
     }
 }

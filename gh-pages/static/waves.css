@@ -1,63 +1,4 @@
-:root {
-/*    --ash-grey: #b4b8abff;
-    --deep-space-blue: #153243ff;
-    --yale-blue: #284b63ff;
-    --ivory: #f4f9e9ff;
-    --soft-linen: #eef0ebff;
-*/
-    --bg-light: #b4b8abff;
-    --bg-dark: #181a1bff;
-    --text-dark: #ccc8c1ff;
-    --link-dark: #95bbd4ff;
-
-    
-    --deep-space-blue: #153243ff;
-    --yale-blue: #284b63ff;
-    --ivory: #f4f9e9ff;
-    --soft-linen: #eef0ebff;
-}
-@font-face {
-  font-family: "Oswald";
-  src:
-    local("Oswald"),
-    url("Oswald-VariableFont_wght.ttf") format("truetype")
-}
-
-body {
-    padding: 75px;
-    background-color: var(--bg-dark);
-    color: var(--text-dark);
-    font-family: "Noto Sans";
-}
-
-/* Link Styling */
-a {
-    color: var(--link-dark);
-    text-decoration: none;
-}
-
-a:hover, a:focus {
-    color: hsl(from var(--link-dark) h s 80%);
-}
-
-h1, .h1 {
-    font-size: 2em;
-    font-weight: 500;
-    font-family: "Oswald";
-}
-
-h2, .h2 {
-    font-size: 1.5em;
-    font-weight: 500;
-    font-family: "Oswald";
-}
-
-h3, .h3 {
-    font-size: 1em;
-    font-weight: 500;
-    font-family: "Oswald";
-}
-
+@import url("style.css");
 /* Wavesets */
 #waveset_data_bg {
     margin-top: 2em;
@@ -213,10 +154,6 @@ input[type=number] {
 }
 
 @media screen and (max-width: 700px) {
-    body {
-        padding: 25px;
-    }
-
     .tooltip {
         width: min-content; /* TODO properly size this */
     }

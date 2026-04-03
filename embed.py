@@ -20,8 +20,8 @@ font = {
 
 img_cache = {}
 
-WIDTH = 512
-HEIGHT = 512
+WIDTH = 1024
+HEIGHT = 256
 
 ICON_SIZE = 50
 ICON_PADDING = 6

@@ -1,5 +1,6 @@
 let filter_tag = "";
 let filter_pap = false;
+let filter_cfghidden = false;
 let filter_content = "";
 /* Filter by TAG */
 function filter_set_tag(tag) {
@@ -20,6 +21,10 @@ function filter_set_pap(checkbox) {
     filter_pap = checkbox.checked;
     filter();
 }
+function filter_set_cfghidden(checkbox) {
+    filter_cfghidden = checkbox.checked;
+    filter();
+}
 function filter() {
     const r = document.getElementsByTagName("details");
     for (var i=0, item; item = r[i]; i++) {
@@ -27,63 +32,67 @@ function filter() {
     }
 }
 
+function hide_on_cond(element, hide, unhide, ah) {
+    if (!ah) {
+        if (hide) {
+            element.classList.add("hidden");
+            return true;
+        } else if (unhide) {
+            element.classList.remove("hidden");
+            return false;
+        }
+        return false
+    }
+    return true
+}
+
 function remove_items_by_tag(root) {
     const la = Array.prototype.slice.call(root.getElementsByTagName("li"),0);
     const lb = Array.prototype.slice.call(root.getElementsByTagName("div"),0);
     const l = la.concat(lb);
-    let has_visible_items = false
+    let has_visible_items = false;
     for (var i=0, item; item = l[i]; i++) {
         if (item.hasAttribute("weapon_tags")) {
+            /* Filter by tag */
             let attr = item.getAttribute("weapon_tags");
-            let already_hidden = false;
-            if (!attr.includes(filter_tag)) {
-                item.classList.add("hidden");
-                already_hidden=true;
-            } else {
-                item.classList.remove("hidden");
-            }
+            let already_hidden = hide_on_cond(
+                item,
+                !attr.includes(filter_tag),
+                true,
+                false
+            )
 
-            if (!already_hidden) {
-                already_hidden = false;
-                if (filter_pap && item.classList.contains("weapon_pap")) {
-                    item.classList.remove("hidden");
-                } else if (!filter_pap && item.classList.contains("weapon_pap")) {
-                    item.classList.add("hidden");
-                    already_hidden=true;
-                };
+            /* Filter pap show/don't show */
+            already_hidden = hide_on_cond(
+                item,
+                !filter_pap && item.classList.contains("weapon_pap"),
+                filter_pap && item.classList.contains("weapon_pap"),
+                already_hidden
+            )
 
-                if (!already_hidden) {
-                    if (item.textContent.toLowerCase().includes(filter_content.toLowerCase())) {
-                        item.classList.remove("hidden");
-                        has_visible_items = true;
-                    } else {
-                        item.classList.add("hidden");
-                    }
-                }
-            };
+            /* Filter cfghidden weapon */
+            already_hidden = hide_on_cond(
+                item,
+                !filter_cfghidden && item.classList.contains("weapon_cfghidden"),
+                filter_cfghidden && item.classList.contains("weapon_cfghidden"),
+                already_hidden
+            )
 
+            /* Filter by custom text */
+            already_hidden = hide_on_cond(
+                item,
+                !item.textContent.toLowerCase().includes(filter_content.toLowerCase()),
+                true,
+                already_hidden
+            )
+
+            if (!already_hidden) {has_visible_items=true};
         }
     }
     if (!has_visible_items) {
         root.classList.add("hidden");
     } else {
         root.classList.remove("hidden");
-    }
-}
-
-/* Filter paps ON/OFF */
-function togglePaps(checkbox) {
-    paps_shown = checkbox.checked;
-    const pap_elements = document.getElementsByClassName("weapon_pap");
-    if (paps_shown) {
-        for (var i=0, item; item = pap_elements[i]; i++) {
-            if (!item.getAttribute("weapon_tags").includes(last_tag)) { continue }; //respect current tag filter
-            item.classList.remove("hidden");
-        }
-    } else {
-        for (var i=0, item; item = pap_elements[i]; i++) {
-            item.classList.add("hidden");
-        }
     }
 }
 

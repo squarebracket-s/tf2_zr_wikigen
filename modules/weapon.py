@@ -133,7 +133,7 @@ def parse():
         pap_idx = 0
         pap_html = ""
         def item_block(parent_pap,idx,html,depth):
-            html += f"<div class=\"weapon_pap hidden\" weapon_tags=\"wtags\" style=\"margin-left: {(depth+1)*10}px;\">\n"
+            html += f"<div class=\"weapon_pap wcfghidden hidden\" weapon_tags=\"wtags\" style=\"margin-left: {(depth+1)*10}px;\">\n"
             for i in range(int(parent_pap.pappaths)):
                 idx += 1
                 if int(parent_pap.pappaths)>1:
@@ -182,13 +182,12 @@ def parse():
 
         paps_html = interpret_weapon_paps(weapon_name,weapon_data)
         
-        #wid = util.id_from_str(weapon_name + description)
+        hidden_str = "<i>Hidden</i>\n" if "hidden" in weapon_data else ""
         context = {
-        #    "name": weapon_name, # TODO put title into sidebar using js
             "tags": tags,
             "author": author,
             "cost": cost,
-            "desc": f"<div>{lvl}</div>\n<div>{description}</div>\n",
+            "desc": f"{hidden_str}<div>{lvl}</div>\n<div>{description}</div>\n",
         }
 
 
@@ -207,18 +206,23 @@ def parse():
                     pass
                     #markdown_header += f"{" "*(depth+1)}{item}  \n" # Trophy:
                 elif is_weapon(item_data):
-                    if "hidden" not in item_data: # TODO add toggle to show
-                        item_html, wtags, item_paps, tags = parse_weapon_data(item,item_data,depth,tags)
-                        # item
-                        context = {
-                            "name": item,
-                            "data_item": item_html,
-                            "wtags": wtags
-                        }
-                        html += util.fill_template(util.read("templates/items/item_preview.html"), context)
+                    item_html, wtags, item_paps, tags = parse_weapon_data(item,item_data,depth,tags)
+                    # item
+                    is_hidden = "hidden" in item_data
+                    context = {
+                        "name": item,
+                        "data_item": item_html,
+                        "wtags": wtags,
+                        "wcfghidden": "weapon_cfghidden hidden" if is_hidden else ""
+                    }
+                    html += util.fill_template(util.read("templates/items/item_preview.html"), context)
 
-                        # paps
-                        html += util.fill_template(item_paps, {"wtags":wtags})
+                    # paps
+                    context = {
+                        "wtags": wtags,
+                        "wcfghidden": "weapon_cfghidden" if is_hidden else "" # paps are hidden by default
+                    }
+                    html += util.fill_template(item_paps, context)
                 elif "weaponkit" in item_data:
                     item_html, wtags, item_paps, tags = parse_weapon_data(item,item_data,depth,tags)
                     # kit (has no paps)
