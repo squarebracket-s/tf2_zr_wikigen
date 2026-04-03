@@ -1,27 +1,21 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[codz]
-*$py.class
 
 # Local testing
+.obsidian/
 venv/
 TF2-Zombie-Riot/
-repo_img/
-.obsidian/
-tf2_zr_wikigen.wiki/
 
-items.md
-weapon_paps.md
-npcs.md
-skilltree.md
+repo_img/
+premedia_icons_unused/
+
+/*.html
 npc_data.json
 npc_data_01.json
 npc_data_02.json
-zr_*.md
-ZR:*.md
-vsh_.md
-sidebar.md
-home.md
 *.cfg
 
-premedia_icons_unused/
+gh-pages/*
+gh-pages/index.html
+!gh-pages/static/
+!gh-pages/waveset_viewer.html

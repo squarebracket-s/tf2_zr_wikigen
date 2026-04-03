@@ -1,31 +1,23 @@
 # tf2_zr_wikigen
-Automatic encyclopedia generator for https://github.com/artvin01/TF2-Zombie-Riot.
+Automatic encyclopedia generator for https://github.com/artvin01/TF2-Zombie-Riot.  
+The code is currently being rewritten to move the encyclopedia to github pages, allowing for more freedom in displaying parsed info, e.g. adding the ability to filter through the weapon list.
 
-# [Wiki](https://github.com/squarebracket-s/tf2_zr_wikigen/wiki)
-# [GH Pages version (WIP)](https://squarebracket-s.github.io/tf2_zr_wikigen/)
+# [GH Pages version](https://squarebracket-s.github.io/tf2_zr_wikigen/)
 
-# TODO (wiki branch)
+# TODO
 - [x] Waveset data
-  - [x] Parsing multiple configs
-  - [x] List config modifiers
-  - [ ] Special wavesets
+  - [] Better NPC data parsing
+  - [] Special wavesets
     - [x] ZR: Survival
     - [x] ZR: Raidrush
-    - [x] ZR: Rogue
+    - [ ] ZR: Rogue
     - [ ] ZR: Construction
         - [ ] Construction 1
         - [ ] Construction 2
     - [x] ZR: Special Maps
-- [x] NPC data
-  - [x] Case for non-shared file with multiple NPC_Add calls
-  - [x] Handle health cases like carrier?4500:(elite?5000:4000)HP, data[0]?3750:3000HP, elite?7200:5700HP
-  - [ ] Show all properties in wavesets
 - [x] Item data
   - [x] Items
   - [x] Weapon Paps
-- [x] Skill tree data
-- [x] Modularise parsing
-  - [x] NPC Class
-  - [x] WeaponPap Class
-  
+- [ ] Skill tree data
+
 Icon source: https://github.com/feathericons/feather

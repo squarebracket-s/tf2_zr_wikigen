@@ -1,9 +1,29 @@
 # Parse all items, weapons and their paps.
 import util
 from keyvalues1 import KeyValues1
+from requests.structures import CaseInsensitiveDict
 
-PHRASES_WEAPON = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/translations/zombieriot.phrases.weapons.description.txt"))["Phrases"]
 CFG_WEAPONS = KeyValues1.parse(util.read("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/weapons.cfg"))["Weapons"]
+
+PHRASES = [
+    "zombieriot.phrases.weapons.description.txt",
+    "zombieriot.phrases.weapons.txt"
+]
+
+PHRASES_MEM = []
+for p in PHRASES:
+    PHRASES_MEM.append(CaseInsensitiveDict(KeyValues1.parse(util.read(f"./TF2-Zombie-Riot/addons/sourcemod/translations/{p}")))["Phrases"])
+
+def get_key(k,silent=False):
+    for phr in PHRASES_MEM:
+        if k in phr:
+            return phr[k]["en"]
+    if not silent: util.log(f"'{k}' has no translation!", "WARNING")
+    if silent:
+        return "" if util.CATEGORIES == "npc" else ""
+    else:
+        return f"{k}" if util.CATEGORIES == "wavesets" else ""
+
 
 class WeaponPap:
     def __init__(self, weapon_name, weapon_data, idx, depth):
@@ -42,10 +62,7 @@ class WeaponPap:
 
 
     def to_md(self):
-        if self.description in PHRASES_WEAPON:
-            desc = PHRASES_WEAPON[self.description]["en"]
-        else:
-            desc = self.description # some paps don't have translation for whatever reason lmao
+        desc = get_key(self.description)
         
         extra_desc = self.extra_desc if len(self.extra_desc) > 0 else ""
 
@@ -58,7 +75,29 @@ class WeaponPap:
         return f"### {space_header} {self.name} \\[{self.id}\\]  \n{tags}{space}${self.cost}  \n{space}{desc.replace("\\n",f"  \n{space}")}  \n{space}{extra_desc.replace("\\n",f"  \n{space}")}  \n"
     
     def to_link(self):
-        return f"{" "*self.depth}{util.to_file_link(self.name, "Weapon_Paps", f"{self.name}-{self.id}", self.depth>0)}  \n"
+        return f"{" "*self.depth}{self.name}  \n"
+    
+    def to_html_preview(self):
+        if len(self.tags)>0: tags = f"{self.tags}"
+        else: tags = ""
+        extra_desc = self.extra_desc if len(self.extra_desc) > 0 else ""
+        desc = get_key(self.description)
+
+        context = {
+            "name": self.name,
+            "tags": tags,
+            "author": "",
+            "cost": f"{self.cost}",
+            "desc": f"<div>{desc.replace("\\n","</div>\n<div>")}</div>\n<div>{extra_desc.replace("\\n","</div>\n<div>")}</div>",
+        }
+        return util.fill_template(util.read("templates/items/item.html"), context)
+    
+    def to_html(self):
+        context = { # wtags left out intentionally, it is replaced later
+            "name": self.name,
+            "data_item": self.to_html_preview()
+        }
+        return util.fill_template(util.read("templates/items/item_preview.html"), context)
 
 class WeaponPap_Dummy:
     def __init__(self, init_pap_paths):
@@ -69,16 +108,14 @@ class WeaponPap_Dummy:
 def parse():
     util.log("Parsing Weapon List...")
 
-    MARKDOWN_WEAPON = ""
-    MARKDOWN_WEAPON_HEADERS = ""
-    MARKDOWN_WEAPON_PAP = ""
+    HTML_WEAPON = ""
     
     def is_item_category(c):
         return "enhanceweapon_click" not in c and "cost" not in c
 
 
     def is_weapon(c):
-        return "desc" in c or "author" in c
+        return (("desc" in c) or ("author" in c)) and not "weaponkit" in c
 
 
     def is_trophy(c):
@@ -94,30 +131,26 @@ def parse():
         pap_#_papskip Skips a number of paps to choose ("1" skip on "PaP 1" allows you to choose "PaP 3" instead)
         """
         pap_idx = 0
-        pap_md = ""
-        pap_links = ""
-        def item_block(parent_pap,idx,md,links,depth):
+        pap_html = ""
+        def item_block(parent_pap,idx,html,depth):
+            html += f"<div class=\"weapon_pap wcfghidden hidden\" weapon_tags=\"wtags\" style=\"margin-left: {(depth+1)*10}px;\">\n"
             for i in range(int(parent_pap.pappaths)):
                 idx += 1
                 if int(parent_pap.pappaths)>1:
-                    md += f"## {" "*depth} _Path {i+1}_  \n"
-                    links += f"{" "*depth} _Path {i+1}_  \n"
+                    html += f"<i>Path {i+1}</i>\n"
                 pd = WeaponPap(weapon_name,weapon_data,idx,depth)
                 if pd.valid:
-                    md += pd.to_md()
-                    links += pd.to_link()
-                    if pd.pappaths!="0": md, links = item_block(pd, idx+int(pd.papskip), md, links,depth+1)
-            return md, links
+                    html += pd.to_html()
+                    if pd.pappaths!="0": html = item_block(pd, idx+int(pd.papskip), html, depth+1)
+            html += "</div>\n"
+            return html
         
-        pap_md += f"# {weapon_name}  \n{util.to_file_link("Back to weapon", "Item_Data", weapon_name)}  \n"
         if "pappaths" in weapon_data: init_pap_paths = weapon_data["pappaths"]
         else: init_pap_paths = 1
-        pap_links = "**Paps**  \n"
-        pap_md, pap_links = item_block(WeaponPap_Dummy(init_pap_paths), pap_idx, pap_md, pap_links, 0)
-        if pap_links == "**Paps**  \n":
-            pap_md = ""
-            pap_links = ""
-        return pap_md, pap_links
+        pap_html = item_block(WeaponPap_Dummy(init_pap_paths), pap_idx, pap_html, 0)
+        if len(pap_html)>0:
+            pap_html += "\n"
+        return pap_html
 
 
     def parse_weapon_data(weapon_name, weapon_data, depth, gtags):
@@ -129,18 +162,16 @@ def parse():
                 if tag.capitalize() not in gtags and tag not in gtags and len(tag)>2: gtags.append(tag)
         else: tags = ""
 
-        if "author" in weapon_data: author = f"Author: {weapon_data["author"]}"
+        if "author" in weapon_data: author = f"By {weapon_data["author"]}"
         else: author = ""
 
-        cost = "$" + weapon_data["cost"]
+        cost = weapon_data["cost"]
+        if cost=="0": cost="Free"
 
         if "desc" in weapon_data: 
             k = weapon_data["desc"]
-            if k in PHRASES_WEAPON:
-                description = PHRASES_WEAPON[k]["en"]
-            else: # this only exists because of the Infinity Blade
-                description = k
-            description = description.replace("\\n","  \n").replace("\n-","\n - ") + "  \n"
+            description = get_key(k)
+            description = description.replace("\\n","</div>\n<div>").replace("\n<div>-","\n<div> - ") + "\n"
             if description.startswith("-"): description=" - "+description[1:]
         else: description = ""
 
@@ -149,48 +180,97 @@ def parse():
         else:
             lvl = ""
 
-        pap_md, pap_links = interpret_weapon_paps(weapon_name,weapon_data)
-        header = f"{" "*(depth+1)} {util.to_file_link(weapon_name, "Item_Data", weapon_name)}  \n"
+        paps_html = interpret_weapon_paps(weapon_name,weapon_data)
         
-        return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{lvl}{description}  \n{pap_links}  ", header, pap_md, gtags
+        hidden_str = "<i>Hidden</i>\n" if "hidden" in weapon_data else ""
+        context = {
+            "tags": tags,
+            "author": author,
+            "cost": cost,
+            "desc": f"{hidden_str}<div>{lvl}</div>\n<div>{description}</div>\n",
+        }
 
 
-    def item_block(key,data,depth,markdown,markdown_header,markdown_pap,tags):
+        return util.fill_template(util.read("templates/items/item.html"), context), tags, paps_html, gtags
+        
+        #return f"##{"#"*depth} {weapon_name}  \n{tags}  \n{author}  \n{cost}  \n{lvl}{description}  \n{pap_links}  ", header, pap_md, gtags
+
+
+    def item_block(key,data,depth,html, tags):
         if "hidden" not in data:
             depth += 1
-            markdown += f"#{"#"*depth} {key}  \n"
-            markdown_header += f"{" "*depth} {key}  \n"
+            html += util.fill_template(util.read("templates/items/item_block_start.html"),{"key":key})
             for item in data:
                 item_data = data[item]
                 if is_trophy(item_data):
-                    markdown_header += f"{" "*(depth+1)}{item}  \n" # Trophy:
+                    pass
+                    #markdown_header += f"{" "*(depth+1)}{item}  \n" # Trophy:
                 elif is_weapon(item_data):
-                    m, mh, mp, tags = parse_weapon_data(item,item_data,depth,tags)
-                    markdown += m
-                    markdown_header += mh
-                    markdown_pap += mp
+                    item_html, wtags, item_paps, tags = parse_weapon_data(item,item_data,depth,tags)
+                    # item
+                    is_hidden = "hidden" in item_data
+                    context = {
+                        "name": item,
+                        "data_item": item_html,
+                        "wtags": wtags,
+                        "wcfghidden": "weapon_cfghidden hidden" if is_hidden else ""
+                    }
+                    html += util.fill_template(util.read("templates/items/item_preview.html"), context)
+
+                    # paps
+                    context = {
+                        "wtags": wtags,
+                        "wcfghidden": "weapon_cfghidden" if is_hidden else "" # paps are hidden by default
+                    }
+                    html += util.fill_template(item_paps, context)
+                elif "weaponkit" in item_data:
+                    item_html, wtags, item_paps, tags = parse_weapon_data(item,item_data,depth,tags)
+                    # kit (has no paps)
+                    context = {
+                        "name": item,
+                        "data_item": item_html,
+                        "wtags": wtags
+                    }
+                    html += util.fill_template(util.read("templates/items/item_preview.html"), context)
+                    html += f"<div style=\"margin-left: 10px;\">\n"
+                    
+                    # kit items (has pap)
+                    for k,v in item_data.items():
+                        if is_weapon(v):
+                            item_html, _, item_paps, tags = parse_weapon_data(k,v,depth,tags) # kit items never have tags on their own
+                            # item
+                            context = {
+                                "name": k,
+                                "data_item": item_html,
+                                "wtags": wtags
+                            }
+                            html += util.fill_template(util.read("templates/items/item_preview.html"), context)
+                            # paps
+                            html += util.fill_template(item_paps, {"wtags":wtags})                            
+                    html += "</div>\n"
+
                 elif item[0].isupper() and is_category(item_data) or "Perks" in item: # unneeded data is always lowercase...
-                    markdown, markdown_header, markdown_pap, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
-                elif "Trophies" == item:
-                    _, markdown_header, markdown_pap, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
-                elif "whiteout" in item_data:
-                    markdown_header += f"{" "*(depth+1)}{item}  \n" # Info:
-        return markdown, markdown_header, markdown_pap, tags
+                    html, tags = item_block(item, item_data, depth, html, tags)
+                elif "Trophies" == item: # Item
+                    util.log("skipping Trophies entry")
+                    #_, tags = item_block(item, item_data, depth, markdown, markdown_header, markdown_pap, tags)
+                elif "whiteout" in item_data: # Text shown in menu
+                    html += item + "\n"
+                    #markdown_header += f"{" "*(depth+1)}{item}  \n"
+            html += "</details>\n"
+        return html, tags
 
 
     tags = []
     for item_category in CFG_WEAPONS:
         if is_item_category(CFG_WEAPONS[item_category]):
-            MARKDOWN_WEAPON, MARKDOWN_WEAPON_HEADERS, MARKDOWN_WEAPON_PAP, tags = item_block(item_category,CFG_WEAPONS[item_category],0,MARKDOWN_WEAPON,MARKDOWN_WEAPON_HEADERS,MARKDOWN_WEAPON_PAP, tags)
+            HTML_WEAPON, tags = item_block(item_category,CFG_WEAPONS[item_category],0, HTML_WEAPON, tags)
     
-    taglist_str = "  \n".join({f" - #{tag}" for tag in tags})
-    MARKDOWN_WEAPON = f"**Available tags:** \n{taglist_str}  \n"+MARKDOWN_WEAPON
-
-    util.write("items.md", MARKDOWN_WEAPON_HEADERS)
-    util.write("item_data.md", MARKDOWN_WEAPON)
-    util.write("weapon_paps.md", MARKDOWN_WEAPON_PAP)
-    return {
-        "items.md": "Items.md",
-        "item_data.md": "Item_Data.md",
-        "weapon_paps.md": "Weapon_Paps.md"
+    #taglist_str = "  \n".join({f" - #{tag}" for tag in tags})
+    #HTML_WEAPON = f"**Available tags:** \n{taglist_str}  \n"+HTML_WEAPON
+    tags_html = "".join([f"<div class=\"btn\" tabindex=\"0\" onclick=\"filter_set_tag('{tag}');\">#{tag}</div>" for tag in tags])
+    context = {
+        "gtags": tags_html,
+        "itemdata": HTML_WEAPON
     }
+    util.write("gh-pages/items.html", util.fill_template(util.read("templates/items/items.html"), context))

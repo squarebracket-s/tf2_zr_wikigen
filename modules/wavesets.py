@@ -1,5 +1,5 @@
 # Parse all NPCs & Wavesets (Normal & Custom, wavesets like Construction are yet to be supported.)
-import util, os, subprocess, pathlib, vtf2img, json, time
+import util, os, subprocess, pathlib, vtf2img, json, time, embed
 from collections import defaultdict
 from keyvalues1 import KeyValues1
 from requests.structures import CaseInsensitiveDict
@@ -94,7 +94,7 @@ class NPC:
 
             
             desc_key = f"{self.name} Desc"
-            self.description = get_key(desc_key, silent=True).replace("\\n","  \n") # (Lots of NPCs with intentionally missing descriptions)
+            self.description = get_key(desc_key, silent=True).replace("\\n", "<div class=\"flex_break\"></div>\n") # (Lots of NPCs with intentionally missing descriptions)
             
             """
             npc_obj = {
@@ -135,10 +135,11 @@ class NPC:
 
             if num in npc_vars_dict:
                 util.debug(f"[X] {self.path} var {num}", "npc")
-                return npc_vars_dict[num]
+                return util.format_num(npc_vars_dict[num])
             else:
                 util.debug(f"[ ] {self.path} var {num}", "npc")
-                return "dynamic"
+                return "?"
+                #return "dynamic"
     
     def _set_npc_data_shared(self):
         # Several instances of NPC entry data, several instances of CClotBody in separate files
@@ -157,9 +158,9 @@ class NPC:
             p_data = util.read(base_path+p+".sp")
             try:
                 h = self.file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
-                if "MinibossHealthScaling" in h:
-                    h = f"Miniboss health scaling (Base {h.split("(")[1][:-1]}HP)"
-                elif ":" in h:
+                #if "MinibossHealthScaling" in h:
+                #    h = f"Miniboss health scaling (Base {h.split("(")[1][:-1]}HP)"
+                if ":" in h:
                     """
                     extra "data" fields for enemies (lists, numbers or types like "Elite")
                     'data[0]?x' is probably checking if any value from the waveset cfg exists at all to use x? 
@@ -203,9 +204,9 @@ class NPC:
     
         try:
             self.health = self.file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
-            if "MinibossHealthScaling" in self.health:
-                self.health = f"Miniboss health scaling (Base {self.health.split("(")[1][:-1]}HP)"
-            elif ":" in self.health:
+            #if "MinibossHealthScaling" in self.health:
+            #    self.health = f"Miniboss health scaling (Base {self.health.split("(")[1][:-1]}HP)"
+            if ":" in self.health:
                 """
                 extra "data" fields for enemies (lists, numbers or types like "Elite")
                 'data[0]?x' is probably checking if any value from the waveset cfg exists at all to use x? 
@@ -254,9 +255,9 @@ class NPC:
         
         try:
             self.health = self.file_data.split("CClotBody(vecPos, vecAng, ")[1].split("));")[0].split(',')[2].replace('"',"").replace(" ","")
-            if "MinibossHealthScaling" in self.health:
-                self.health = f"Miniboss health scaling (Base {self.health.split("(")[1][:-1]}HP)"
-            elif ":" in self.health:
+            #if "MinibossHealthScaling" in self.health:
+            #    self.health = f"Miniboss health scaling (Base {self.health.split("(")[1][:-1]}HP)"
+            if ":" in self.health:
                 """
                 extra "data" fields for enemies (lists, numbers or types like "Elite")
                 'data[0]?x' is probably checking if any value from the waveset cfg exists at all to use x? 
@@ -367,28 +368,30 @@ def parse():
             w = w.format(*(" "*i + delay_str for i in range(delay_count)))
         return w
     
-    def add_npc(plugin, data):
-        if plugin not in added_npc_ids:
-            added_npc_ids.append(plugin)
-            npc_data = NPCS_BY_FILENAME[plugin]
-            if type(npc_data.health) == dict:
-                npc_health = ""
-                for k,v in npc_data.health.items():
-                    npc_health += f"{k.capitalize()}: {v}HP"
-            else:
-                npc_health = f"Default health: {npc_data.health}  \n" if npc_data.health != "" else ""
-            npc_cat = f"Category: {npc_data.category}  \n" if npc_data.category != "" else ""
-            if "0" not in npc_data.flags and "-1" not in npc_data.flags:
-                npc_flags = "Flags: "
-                dflags = ", ".join([FLAG_MAPPINGS[item] for item in npc_data.flags])
-                npc_flags += dflags + "  \n"
-            else:
-                npc_flags = ""
-            return f"# {data["image"].replace("16","32") if data["image"]!="" else ""} {data["name"]}  \n_{plugin}_  \n{npc_health}{npc_flags}{npc_data.description}  \n"
-        return ""
+    def get_npc(plugin, data):
+        npc_data = NPCS_BY_FILENAME[plugin]
+        if type(npc_data.health) == dict:
+            npc_health = ""
+            for k,v in npc_data.health.items():
+                npc_health += f"{k.capitalize()}: {v}HP"
+        else:
+            npc_health = f"Default health: {npc_data.health}  \n" if npc_data.health != "" else ""
+        npc_cat = f"Category: {npc_data.category}  \n" if npc_data.category != "" else ""
+        if "0" not in npc_data.flags and "-1" not in npc_data.flags:
+            npc_flags = "Flags: "
+            dflags = ", ".join([FLAG_MAPPINGS[item] for item in npc_data.flags])
+            npc_flags += dflags + "  \n"
+        else:
+            npc_flags = ""
+        return {
+            "plugin": plugin,
+            "default_health": npc_health,
+            "flags": npc_flags,
+            "description": npc_data.description
+        }
 
-    def parse_wave(wave_data, md_npc, is_betting=False, force=False):
-        md_new = ""
+    def parse_wave(wave_data, is_betting=False, force=False):
+        output = []
         if is_betting:
             md_new = "| Budget | NPC |\n| --- | --- |\n"
         for wave_entry in wave_data:
@@ -396,6 +399,7 @@ def parse():
             try:
                 float(wave_entry)
             except ValueError:
+                continue # TODO
                 if wave_entry.startswith("music_"):
                     if (mdata := util.music_modal(wave_entry_data)): md_new += mdata
                 
@@ -453,7 +457,7 @@ def parse():
             String spawn ?
             )
             """
-            count = "always 1" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
+            count = "<b>1</b>" if wave_entry_data["count"] == "0" else wave_entry_data["count"]
             
             if wave_entry_data["plugin"] in NPCS_BY_FILENAME:
                 npc_data = NPCS_BY_FILENAME[wave_entry_data["plugin"]]
@@ -474,7 +478,7 @@ def parse():
             """
             extra_info = ""
             if "health" in wave_entry_data:
-                extra_info += f" {wave_entry_data["health"]}HP"
+                extra_info += f" {util.format_num(wave_entry_data["health"])}HP"
             elif npc_data:
                 if type(npc_data.health) == dict:
                     if "data" in wave_entry_data:
@@ -495,7 +499,8 @@ def parse():
                         h = f" {npc_data.health[data_key.lower()]}"
                     else:
                         h = npc_data.health["default"]
-                    extra_info += f" {h}HP"
+                    
+                    extra_info += f" {util.format_num(h)}HP"
                 else:
                     extra_info += f" {npc_data.health}"
             else:
@@ -504,6 +509,7 @@ def parse():
             # Show NPC Flags
             # TODO some icons missing even tho they exist
             display_name = npc_name
+            desc = ""
             if npc_data:
                 for flag in npc_data.flags:
                     if flag != "0" and flag != "-1":
@@ -525,14 +531,15 @@ def parse():
                     elif os.path.isfile(premedia_npc_icon_path):
                         image = util.md_img(premedia_npc_icon_path,"B")
                     else:
-                        image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","C")
+                        image = util.md_img("./builtin_img/missing.png","C")
                 else:
-                    image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","D")
+                    image = util.md_img("./builtin_img/missing.png","D")
                 
-                if npc_data.category != "Type_Hidden":
-                    display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
+                if npc_data.category != "Type_Hidden": # No longer needed. TODO remove npc info on hover if hidden
+                    #display_name = util.to_file_link(npc_name,"NPCs",npc_name,True)
                     # Add NPC if not hidden & doesn't exist already
-                    md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image}) 
+                    desc = "<div class=\"flex_break\"></div>\n"+get_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image})["description"] # TODO use flags for different icon looks
+                    #md_npc += add_npc(wave_entry_data["plugin"], {"name": npc_name, "image": image}) 
             else:
                 image = "" if "wavesets" not in util.CATEGORIES else util.md_img("./builtin_img/missing.png","E")
                 
@@ -549,40 +556,61 @@ def parse():
                     if float(percent_text).is_integer():
                         percent_text = int(percent)
 
-                    extra_info += f" `{char}` {percent_text}％"
+                    extra_info += f" {char} {percent_text}％"
 
             # Add NPC to wave data   
             if is_betting:
                 # For first table val: int("1.0") -> ValueError | int(float("1.0")) -> 1
                 md_new += f"| {int(float(wave_entry))} | {count} {image if image!="" else ""} {npc_name_prefix} {display_name} {extra_info} |  \n"
             else:
-                md_new += f"{count} {image if image else ""} {npc_name_prefix} {display_name} {extra_info}  \n"
+                output.append(
+                    {
+                        "count": count,
+                        "img": image if image else "",
+                        "prefix": npc_name_prefix,
+                        "display_name": display_name,
+                        "extra_info": extra_info + desc
+                    }
+                )
         
-        return md_new, md_npc
+        return output
     
-    def parse_waveset(name, data, md_wavesets, md_npc, DEPTH=2):
+    def parse_waveset(file, data, abslink, name, desc, DEPTH=2):
         global waveset_cache
-        if name in waveset_cache:
-            util.debug(f"    -> Returning cache for {name}", "waveset", "OKCYAN")
-            md_wavesets += waveset_cache[name]
-            return md_wavesets, md_npc
+        if file in waveset_cache:
+            util.debug(f"    -> Returning cache for {file}", "waveset", "OKCYAN")
+            return waveset_cache[file]
         
         wd = defaultdict(str,data)
-        md_new = ""
-        a_npc = f"NPCs by: {wd["author_npcs"]}  \n" if wd["author_npcs"] != "" else ""
-        a_format = f"Format by: {wd["author_format"]}  \n" if wd["author_format"] != "" else ""
-        a_raid = f"Raidboss by: {wd["author_raid"]}  \n" if wd["author_raid"] != "" else ""
-        complete_item = f"Item on win: {wd["complete_item"]}  \n" if wd["complete_item"] != "" else ""
-        md_new += f"{a_npc}{a_format}{a_raid}{complete_item}"
+        output = {
+            "waves": {},
+            "authors": {
+                "npc": wd["author_npcs"],
+                "format": wd["author_format"],
+                "raid": wd["author_raid"]
+            },
+            "item_on_win": wd["complete_item"]
+        }
         
         wave_idx = 0
+
+        max_waves = 0
+        for wave in data:
+            try:
+                int(wave)
+            except ValueError:
+                continue
+            max_waves=max(int(wave),max_waves)
+        assert max_waves!=0
+
         for wave in data:
             wave_data = data[wave]
             try:
                 int(wave)
             except ValueError:
-                if wave.startswith("music_"):
-                    if (mdata := util.music_modal(wave_data)): md_new += mdata
+                continue
+                if wave.startswith("music_") and False:
+                    if (mdata := util.music_modal(wave_data)): output += mdata
                 continue
 
             wave_npc_amt = sum([int(util.is_float(entry)) for entry in wave_data])
@@ -591,34 +619,49 @@ def parse():
 
             abovelimit = False if "fakemaxwaves" not in wd else wave_idx > int(wd["fakemaxwaves"]) # If wave number is above specified max fake limit
 
-            mn, md_npc = parse_wave(wave_data, md_npc)
-            md_new += f"{"#"*DEPTH} {wave_idx}  \n{mn}" # marking in headers does not work in github markdown!! TODO
+            output["waves"][wave_idx] = parse_wave(wave_data)
+            embed.generate_waveset_embed(f"{abslink}_{wave_idx}", name, int(wave), max_waves, output["waves"][wave_idx])
         
-        waveset_cache[name] = md_new
-        md_wavesets += md_new
-        return md_wavesets, md_npc
+        waveset_cache[file] = output
+        return output
     
-    def parse_waveset_list_cfg_common(cfg, filename, md_npc, md_mapsets):
+    def parse_waveset_list_cfg_common(cfg, filename, html_mapsets):
         map_mode = "maps" in filename # Is map specific config?
         WAVESET_LIST = cfg[list(cfg.keys())[0]] # data of cfg file
         if "Setup" in WAVESET_LIST: WAVESET_LIST = WAVESET_LIST["Setup"] # map-specific configs start with custom instead of setup, requiring an extra step to get to waveset/wave< data
         if "Setup" in WAVESET_LIST: WAVESET_LIST = WAVESET_LIST["Setup"] # zr_bossrush
 
-        MARKDOWN_WAVESETS = f"Starting cash: ${WAVESET_LIST["cash"]}  \n"
-        
+        wavesetlist_html = ""
+        wavesets_json = {}
+
         if "Waves" in WAVESET_LIST: # list of wavesets
             wavesets = WAVESET_LIST["Waves"]
             # Outline
             if len(wavesets)>1:
-                MARKDOWN_WAVESETS += "# Wavesets  \n"
+                wavesetlist_html += "<ul>\n"
                 for waveset_name in wavesets:
-                    MARKDOWN_WAVESETS += f"- [{waveset_name}](#{util.to_section_link(waveset_name)})  \n"
+                    link = f"{util.absolute_link(filename,waveset_name)}.json"
+                    wavesetlist_html += f"<li><a href=\"waveset_viewer.html?w={link}\">{waveset_name}</li>\n"
+                wavesetlist_html += "</ul>\n"
+                if map_mode: 
+                    n = filename.split("/")[-1].replace(".cfg","")
+                    html_mapsets += f"<li><a href=\"{n}.html\">{n}</a></li>"
+            else:
+                if map_mode: 
+                    waveset_name = list(wavesets.keys())[0]
+                    n = filename.split("/")[-1].replace(".cfg","")
+                    link = f"{util.absolute_link(filename,waveset_name)}.json"
+                    html_mapsets += f"<li><a href=\"waveset_viewer.html?w={link}\">{n} - {waveset_name}</li>\n"
+                else:
+                    util.log(f"{filename} - Only one waveset but not in maps/ dir","FAIL")
+                    raise Exception
 
             # Modifier outline
-            if "Modifiers" in WAVESET_LIST:
-                MARKDOWN_WAVESETS += f"# Modifiers  \n"
-                for modifiers in WAVESET_LIST["Modifiers"]:
-                    MARKDOWN_WAVESETS += f"- [{modifiers}](#{util.to_section_link(modifiers)})  \n"    
+            # TODO
+            #if "Modifiers" in WAVESET_LIST:
+            #    MARKDOWN_WAVESETS += f"# Modifiers  \n"
+            #    for modifiers in WAVESET_LIST["Modifiers"]:
+            #        MARKDOWN_WAVESETS += f"- [{modifiers}](#{util.to_section_link(modifiers)})  \n"    
             
             # Data
             for waveset_name in wavesets:
@@ -640,45 +683,47 @@ def parse():
                 else:
                     desc = ""
                 util.debug(f"Adding waveset {waveset_name} to {filename}","wavesets","OKCYAN")
-                MARKDOWN_WAVESETS += f"# {waveset_name}  \n{"[Back to top](#wavesets)  \n" * int(not map_mode)}{desc}  \n"
-                lb = len(MARKDOWN_WAVESETS)
-                MARKDOWN_WAVESETS, md_npc = parse_waveset(waveset_file, WAVESET_DATA, MARKDOWN_WAVESETS, md_npc)
-                util.debug(f"{filename} waveset markdown lendiff {abs(len(MARKDOWN_WAVESETS)-lb)}","wavesets","OKCYAN")
-        else: # Waveset itself / map_mode | Assume data being in the cfg file itself. See: maps/zr_bossrush.cfg
-            # mapset, i.e. only one waveset
-            # also add link to its config file in md_mapsets (mapset outline in home.md and sidebar.md)
-            # might be unused at the moment
-            MARKDOWN_WAVESETS, md_npc = parse_waveset(filename, WAVESET_LIST, MARKDOWN_WAVESETS, md_npc)
-        
-        if map_mode: 
-            n = filename.split("/")[-1].replace(".cfg","")
-            md_mapsets += f"- [{n}]({n})  \n"
+                mn = parse_waveset(waveset_file, WAVESET_DATA, util.absolute_link(filename,waveset_name), waveset_name, desc)
+                mn["name"] = waveset_name
+                wavesets_json[waveset_name] = mn
+        else: # Waveset itself / map_mode | Assume data being in the cfg file itself. Might only be the case for rogue/const/bettingwars
+            util.log(f"{filename} - No 'Waves' key found!","FAIL")
+            raise Exception
         
         # Modifiers title and desc
-        if "Modifiers" in WAVESET_LIST:
-            for modifier in WAVESET_LIST["Modifiers"]:
-                data = WAVESET_LIST["Modifiers"][modifier]
-                desc = get_key(data["desc"]).replace("\\n","  \n")
-                MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
+        #if "Modifiers" in WAVESET_LIST:
+        #    for modifier in WAVESET_LIST["Modifiers"]:
+        #        data = WAVESET_LIST["Modifiers"][modifier]
+        #        desc = get_key(data["desc"]).replace("\\n","  \n")
+        #        MARKDOWN_WAVESETS += f"# {modifier}  \n[Back to top](#modifiers)  \nMinimum level: {float(data["level"])*1000}  \n{desc}  \n"
         
-        return MARKDOWN_WAVESETS, md_npc, md_mapsets
+        if not os.path.isdir("gh-pages/wavesets"): subprocess.run(["mkdir", "gh-pages/wavesets"])
+        for f_waveset, f_data in wavesets_json.items():
+            util.write(f"gh-pages/wavesets/{util.absolute_link(filename,f_waveset)}.json", json.dumps(f_data,indent=2))
 
-    def parse_waveset_list_cfg(filename, md_npc, md_mapsets, filename_md=None):
+        context = { # startcash, wavesetlistdata
+            "startcash": WAVESET_LIST["cash"],
+            "wavesetlistdata": wavesetlist_html
+        }
+        HTML_WAVESET_LIST = util.fill_template(util.read(f"templates/waveset/{"mapset_overview" if map_mode else "waveset_list"}.html"),context)
+        return HTML_WAVESET_LIST, html_mapsets
+
+    def parse_waveset_list_cfg(filename, html_mapsets, filename_md=None):
         if (filename not in util.WAVESETS_FILESCOPE) and len(util.WAVESETS_FILESCOPE)>0:
             util.log(f"{filename} not in FILESCOPE", "OKBLUE")
-            return md_npc, md_mapsets
+            return html_mapsets
         WAVESETLIST_RAW = util.read(f"./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/{filename}")
         WAVESETLIST_DATA = KeyValues1.parse(WAVESETLIST_RAW)
         WAVESETLIST_TYPE = list(WAVESETLIST_DATA.keys())[0]
 
         if WAVESETLIST_TYPE not in util.WAVESETS_TYPESCOPE: # Unsupported waveset cfg (Rogue, Bunker, etc.)
             util.log(f"Unsupported waveset cfg {filename}!","WARNING")
-            return md_npc, md_mapsets
+            return html_mapsets
         
         util.log(f"Parsing waveset list cfg: {filename} | Is map? {"maps" in filename}")
 
         """
-        maps/zr_bunker_old_fish.cfg - currently disabled in zr and has missing files
+        maps/zr_bunker_old_fish.cfg - currently disabled in zr? and has missing files
         maps/zr_beastrooms.cfg - empty
         maps/zr_holdout.cfg - const ?
 
@@ -693,31 +738,24 @@ def parse():
         """
 
         if WAVESETLIST_TYPE in ["Setup", "Custom"]:
-            # TODO global MARKDOWN_WAVESETS
-            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, md_npc, md_mapsets)
+            HTML_WAVESETS, html_mapsets = parse_waveset_list_cfg_common(WAVESETLIST_DATA, filename, html_mapsets)
         elif WAVESETLIST_TYPE == "Betting":
-            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_RAW, md_npc, md_mapsets)
+            HTML_WAVESETS, md_npc, md_mapsets = parse_betting(filename, WAVESETLIST_RAW, md_mapsets)
         elif WAVESETLIST_TYPE == "Rogue":
-            MARKDOWN_WAVESETS, md_npc, md_mapsets = parse_rogue(filename, WAVESETLIST_DATA, md_npc, md_mapsets)
+            HTML_WAVESETS, md_npc, md_mapsets = parse_rogue(filename, WAVESETLIST_DATA, md_mapsets)
         else:
-            MARKDOWN_WAVESETS = f"err key {WAVESETLIST_TYPE}"
+            HTML_WAVESETS = f"err key {WAVESETLIST_TYPE}"
             util.log("UNSUPPORTED CFG IN OUTPUT!", "FAIL")
 
         if not filename_md:
             if "maps" in filename:
-                filename_md = filename.split("/")[-1].replace(".cfg","") + ".md"
-                display_name = filename_md
+                filename_md = f"gh-pages/{filename.split("/")[-1].replace(".cfg","")}.html"
             else:
-                filename_md = f"wavesets_{filename}.md".replace("/","_")
-                disp = filename.replace(".cfg","").replace("_"," ").replace("/"," ")
-                disp_title = disp.replace("'","~").title().replace("~","'") # https://stackoverflow.com/a/1549644
-                display_name = f"{disp_title}.md"
-        else:
-            display_name = filename_md
-        
-        generated_files[filename_md] = display_name
-        util.write(filename_md, MARKDOWN_WAVESETS)
-        return md_npc, md_mapsets
+                filename_md = f"gh-pages/wavesets_{filename}.html".replace("/","_")
+        name = filename_md.split("/")[-1].replace(".html","")
+        if "maps" not in filename: name=name.title()
+        util.write(filename_md, util.fill_template(HTML_WAVESETS,{"wavesetlistname":name}))
+        return html_mapsets
     
     #### ZR: Special Maps ####
     def parse_betting(name, data_raw, md_npc, md_mapsets): # zr_bettingwars
@@ -798,37 +836,38 @@ def parse():
         modal = f"$$ \\textbf{{ {get_key(name).replace("&","\\&")} }} $$\n{shop_cost}{dropchance}$$\n{util.as_latex(get_key(f"{name} Desc"))}\n$$"
         return modal + "  \n"
 
-    # NPC list is global to prevent duplicates
     PATH_NPC = "./TF2-Zombie-Riot/addons/sourcemod/scripting/zombie_riot/npc/"
-    # TODO what the hell. make this global
-    MARKDOWN_NPCS = ""
-    MARKDOWN_MAPSETS = "\n**Map-specific wavesets**  \n"
-    added_npc_ids = []
 
+    if not os.path.isdir("gh-pages/embed"): subprocess.run(["mkdir", "gh-pages/embed"])
+    if not os.path.isdir("gh-pages/waveset_embeds"): subprocess.run(["mkdir", "gh-pages/waveset_embeds"])
     if not os.path.isdir("repo_img"): subprocess.run(["mkdir", "repo_img"])
 
     util.log("Parsing NPCs...")
     NPCS_BY_FILENAME = parse_all_npcs()
 
     cfg_files = {
-        "classic.cfg": "ZR: Survival.md",
-        "fastmode.cfg": "ZR: Raidrush.md",
-        "fastmode_redsun.cfg": "ZR: Raidrush (redsun.tf).md", 
+        "classic.cfg": "gh-pages/survival.html",
+        "fastmode.cfg": "gh-pages/raidrush.html",
     }
     for file in os.listdir("./TF2-Zombie-Riot/addons/sourcemod/configs/zombie_riot/maps/"):
         if ".cfg" in file:
             cfg_files[f"maps/{file}"] = None
 
-    for f in cfg_files.keys():
-        MARKDOWN_NPCS, MARKDOWN_MAPSETS = parse_waveset_list_cfg(f, MARKDOWN_NPCS, MARKDOWN_MAPSETS, filename_md=cfg_files[f])
+    HTML_SPECIALMAPS = ""
+    for f,n in cfg_files.items():
+        HTML_SPECIALMAPS = parse_waveset_list_cfg(f, HTML_SPECIALMAPS, filename_md=n)
 
     # Get current commit SHA for TF2-Zombie-Riot
     COMMIT_SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
     COMMIT_SHA_SHORT = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd="TF2-Zombie-Riot").strip().decode("utf-8")
 
-    PARSE_RUN_INFO = f"\n<sub>Code parsed at {util.datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')} H:M:S D.M.Y {time.tzname[time.daylight]}</sub>  \n<sub>Source repository commit [artvin01/TF2-Zombie-Riot@`{COMMIT_SHA_SHORT}`](https://github.com/artvin01/TF2-Zombie-Riot/commit/{COMMIT_SHA})</sub>"
+    context = {
+        "wavesetlistdata": HTML_SPECIALMAPS # list of mapset_overview templates
+    }    
+    util.write("gh-pages/special.html", util.fill_template(util.read("templates/waveset/mapset_list.html"), context))
 
-    util.write("npcs.md", MARKDOWN_NPCS)
-    util.write("sidebar.md", util.read("wiki/sidebar.md")+MARKDOWN_MAPSETS)
-    util.write("home.md", util.read("wiki/home.md")+MARKDOWN_MAPSETS+PARSE_RUN_INFO)
+    context = {
+        "parse_run": f"\n<sub>Code parsed at {util.datetime.datetime.now().strftime('%H:%M:%S %d.%m.%Y')} H:M:S D.M.Y {time.tzname[time.daylight]}</sub><br><sub>Source repository commit <a href=\"https://github.com/artvin01/TF2-Zombie-Riot/commit/{COMMIT_SHA}\">artvin01/TF2-Zombie-Riot@{COMMIT_SHA_SHORT}</a></sub>",
+    }
+    util.write("gh-pages/index.html", util.fill_template(util.read("templates/index.html"),context))
     return generated_files
