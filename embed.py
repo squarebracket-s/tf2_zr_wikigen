@@ -21,7 +21,7 @@ font = {
 img_cache = {}
 
 WIDTH = 1024
-HEIGHT = 256
+HEIGHT = 512
 
 ICON_SIZE = 50
 ICON_PADDING = 6
@@ -33,21 +33,11 @@ def generate_waveset_embed(filename, title, wave, wave_max, npc_list):
     global ICON_SIZE, ICON_PADDING, ICON_INNER_PADDING
     ICON_SIZE = 50
     ICON_INNER_PADDING = 5
-    
-    img = Image.new(mode="RGB", size=(WIDTH, HEIGHT))
-    drawable = ImageDraw.Draw(img)
 
-    drawable.rectangle([(0,0),(WIDTH,HEIGHT)], color["bg_dark"])
-    # https://pillow.readthedocs.io/en/stable/deprecations.html#font-size-and-offset-methods
-    draw_text_centered(drawable, (WIDTH/2, 10), title, color["text_dark"], font["Oswald"])
-    draw_text_centered(drawable, (WIDTH/2, 65), f"WAVE {wave} / {wave_max}", color["text_dark"], font["Oswald"])
     bar_y = 125
     bar_height = 15
     bar_padding = 25
-    drawable.rounded_rectangle([(bar_padding,bar_y), (WIDTH-bar_padding,bar_y+bar_height)], 4, color["bg_light"], outline=color["deep-space-blue"])
     bar_width = WIDTH-((bar_padding+2)*2)
-    progress = (wave/wave_max)*bar_width
-    drawable.rounded_rectangle([(bar_padding+2,bar_y+2), (bar_padding+2+progress,(bar_y+bar_height)-2)], 4, color["link_dark"], corners=(True,True,True,True) if wave == wave_max else (True, False, False, True))
 
     npc_list_chunks = chunks(npc_list, math.floor((WIDTH-60)/(ICON_SIZE+ICON_PADDING)))
 
@@ -57,12 +47,20 @@ def generate_waveset_embed(filename, title, wave, wave_max, npc_list):
     npc_list_chunks, chunklen = tee(npc_list_chunks) # copy generator as not to break following code
     nlen = len(list(chunklen)) 
     enemy_height = ICON_SIZE+ICON_PADDING+ICON_SIZE/2
-    actual_height = (WIDTH-bar_padding) - dy
-    if nlen > math.floor(actual_height/enemy_height):
-        full_height = enemy_height * nlen
-        mult = actual_height/full_height
-        ICON_SIZE = math.floor(ICON_SIZE*mult)
-        ICON_INNER_PADDING = math.floor(ICON_INNER_PADDING*mult)
+    HEIGHT = dy+math.ceil(enemy_height * nlen)
+    
+    img = Image.new(mode="RGB", size=(WIDTH, HEIGHT))
+    drawable = ImageDraw.Draw(img)
+
+    drawable.rectangle([(0,0),(WIDTH,HEIGHT)], color["bg_dark"])
+    # https://pillow.readthedocs.io/en/stable/deprecations.html#font-size-and-offset-methods
+    draw_text_centered(drawable, (WIDTH/2, 10), title, color["text_dark"], font["Oswald"])
+    draw_text_centered(drawable, (WIDTH/2, 65), f"WAVE {wave} / {wave_max}", color["text_dark"], font["Oswald"])
+
+    drawable.rounded_rectangle([(bar_padding,bar_y), (WIDTH-bar_padding,bar_y+bar_height)], 4, color["bg_light"], outline=color["deep-space-blue"])
+    progress = (wave/wave_max)*bar_width
+    drawable.rounded_rectangle([(bar_padding+2,bar_y+2), (bar_padding+2+progress,(bar_y+bar_height)-2)], 4, color["link_dark"], corners=(True,True,True,True) if wave == wave_max else (True, False, False, True))
+
 
     for row in npc_list_chunks:
         row_w = (ICON_SIZE+ICON_PADDING)*len(row)
