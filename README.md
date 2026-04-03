@@ -6,8 +6,8 @@ The code is currently being rewritten to move the encyclopedia to github pages, 
 
 # TODO
 - [x] Waveset data
-  - [] Better NPC data parsing
-  - [] Special wavesets
+  - [ ] Better NPC data parsing
+  - [ ] Special wavesets
     - [x] ZR: Survival
     - [x] ZR: Raidrush
     - [ ] ZR: Rogue

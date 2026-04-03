@@ -2,7 +2,8 @@ on:
   push:
     branches:
     - master # zr branch
-    - page_gen # wiki branch
+    - wiki_gen # wiki branch | zr repo
+    - main # wiki branch | wiki repo
   workflow_dispatch:
 
 concurrency:
